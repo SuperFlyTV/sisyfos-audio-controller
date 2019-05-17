@@ -2,6 +2,7 @@
 import { MixerProtocolPresets } from '../constants/MixerProtocolPresets';
 import { OscMixerConnection } from '../utils/OscMixerConnection';
 import { MidiMixerConnection } from '../utils/MidiMixerConnection';
+import { EmberMixerConnection } from '../utils/EmberMixerConnection';
 
 // FADE_INOUT_SPEED defines the resolution of the fade in ms
 // The lower the more CPU
@@ -27,6 +28,8 @@ export class MixerConnection {
             this.mixerConnection = new OscMixerConnection(this.fadeInOut);
         } else if (this.mixerProtocol.protocol === 'MIDI') {
             this.mixerConnection = new MidiMixerConnection(this.fadeInOut);
+        } else if (this.mixerProtocol.protocol === 'EMBER') {
+            this.mixerConnection = new EmberMixerConnection(this.fadeInOut);
         }
 
         //Setup timers for fade in & out
