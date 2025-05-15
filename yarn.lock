@@ -2966,16 +2966,7 @@ __metadata:
   resolution: "@types/node@npm:18.19.75"
   dependencies:
     undici-types: "npm:~5.26.4"
-  checksum: 10c0/6a78833071d23dcd4010507d0a232da1cb6e939eb5b62023a01ab5f91eecb90223bda3e34aa536f02cd5c3bdf7962c754b7e2a051a8224aed5886788fce88fbf
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^24":
-  version: 24.10.0
-  resolution: "@types/node@npm:24.10.0"
-  dependencies:
-    undici-types: "npm:~7.16.0"
-  checksum: 10c0/f82ed7194e16f5590ef7afdc20c6d09068c76d50278b485ede8f0c5749683536e3064ffa8def8db76915196afb3724b854aa5723c64d6571b890b14492943b46
+  checksum: 10c0/d6a31a3f03c4e2c62cdd319ab7f6ff66038d7408158304cfe0a852c9b0247893f5173bafffa0a090bcc279a6015a7c8399a51bf8e44f781edd4d41c43f274edb
   languageName: node
   linkType: hard
 
@@ -11643,7 +11634,16 @@ asn1@evs-broadcast/node-asn1:
   languageName: node
   linkType: hard
 
-"shared@npm:*, shared@workspace:shared":
+"shared@file:../shared::locator=server%40workspace%3Aserver":
+  version: 0.0.0
+  resolution: "shared@file:../shared#../shared::hash=186ca9&locator=server%40workspace%3Aserver"
+  dependencies:
+    redux: "npm:^5.0.1"
+  checksum: 10c0/658d8aa33c7bdd6b8832fc84f886d79494ac14c1bf908dbfca7e765424b87efbc216408b255b7e45c94a7fd58908fb4c92f924ee14f5af0491224b4408a9105d
+  languageName: node
+  linkType: hard
+
+"shared@workspace:shared":
   version: 0.0.0-use.local
   resolution: "shared@workspace:shared"
   dependencies:

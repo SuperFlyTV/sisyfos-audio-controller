@@ -32,6 +32,7 @@ import { MixerConnection } from './mixerConnections'
 import { SecondOutRowButtonType } from '../../../shared/src/reducers/settingsReducer'
 import { LawoMC2Connection } from './mixerConnections/LawoMC2Connection'
 import { DHDMixerConnection } from './mixerConnections/DHDConnection'
+import { LawoMC2Connection } from './mixerConnections/LawoMC2Connection'
 
 export class MixerGenericConnection {
     mixerProtocol: MixerProtocolGeneric[]
@@ -183,7 +184,9 @@ export class MixerGenericConnection {
     delayedFadeActiveDisable = (mixerIndex: number, channelIndex: number) => {
         this.mixerTimers[mixerIndex].fadeActiveTimer[channelIndex] = setTimeout(
             () => {
-                logger.trace(`Clearing fadeActive on ${mixerIndex} Ch ${channelIndex}`)
+                logger.trace(
+                    `Clearing fadeActive on ${mixerIndex} Ch ${channelIndex}`
+                )
 
                 store.dispatch({
                     type: ChannelActionTypes.FADE_ACTIVE,
@@ -278,7 +281,6 @@ export class MixerGenericConnection {
     updateInputGain = (faderIndex: number) => {
         let level = state.faders[0].fader[faderIndex].inputGain
         state.faders[0].fader[faderIndex].assignedChannels?.forEach(
-
             (assignedChannel: ChannelReference) => {
                 this.mixerConnection[
                     assignedChannel.mixerIndex
@@ -305,9 +307,7 @@ export class MixerGenericConnection {
     updatePflState = (faderIndex: number) => {
         state.faders[0].fader[faderIndex].assignedChannels?.forEach(
             (assignedChannel: ChannelReference) => {
-                this.mixerConnection[
-                    assignedChannel.mixerIndex
-                ].updatePflState(
+                this.mixerConnection[assignedChannel.mixerIndex].updatePflState(
                     assignedChannel.channelIndex
                 )
             }
@@ -415,7 +415,8 @@ export class MixerGenericConnection {
         faderIndex: number,
         fadeTime: number
     ) => {
-        const isOnAir = state.faders[0].fader[faderIndex].pgmOn ||
+        const isOnAir =
+            state.faders[0].fader[faderIndex].pgmOn ||
             state.faders[0].fader[faderIndex].voOn
 
         if (
@@ -452,19 +453,26 @@ export class MixerGenericConnection {
             this.fadeDown(mixerIndex, channelIndex, fadeTime)
         }
         store.dispatch({
-          type: ChannelActionTypes.FADE_ACTIVE,
-          mixerIndex: mixerIndex,
-          channel: channelIndex,
-          active: true,
+            type: ChannelActionTypes.FADE_ACTIVE,
+            mixerIndex: mixerIndex,
+            channel: channelIndex,
+            active: true,
         })
     }
 
-    jumpToLevel = (mixerIndex: number, channelIndex: number, faderIndex: number) => {
+    jumpToLevel = (
+        mixerIndex: number,
+        channelIndex: number,
+        faderIndex: number
+    ) => {
         let targetVal = state.faders[0].fader[faderIndex].faderLevel
         if (state.faders[0].fader[faderIndex].voOn) {
             targetVal = (targetVal * (100 - state.settings[0].voLevel)) / 100
         }
-        this.mixerConnection[mixerIndex].updateFadeIOLevel(channelIndex, targetVal)
+        this.mixerConnection[mixerIndex].updateFadeIOLevel(
+            channelIndex,
+            targetVal
+        )
         store.dispatch({
             type: ChannelActionTypes.SET_OUTPUT_LEVEL,
             mixerIndex: mixerIndex,
@@ -482,14 +490,19 @@ export class MixerGenericConnection {
         fadeTime: number,
         faderIndex: number
     ) => {
-        let startLevel = state.channels[0].chMixerConnection[mixerIndex].channel[
-                channelIndex].outputLevel
+        let startLevel =
+            state.channels[0].chMixerConnection[mixerIndex].channel[
+                channelIndex
+            ].outputLevel
 
-        if (state.channels[0].chMixerConnection[mixerIndex].channel[channelIndex].fadeActive
-                && this.currentOutputLevel[channelIndex] !== undefined
-            ) {
+        if (
+            state.channels[0].chMixerConnection[mixerIndex].channel[
+                channelIndex
+            ].fadeActive &&
+            this.currentOutputLevel[channelIndex] !== undefined
+        ) {
             logger.trace(
-              `Preparing fade on ${mixerIndex} Ch ${channelIndex} level ${startLevel} is overriden by ${this.currentOutputLevel[channelIndex]} because fadeActive`
+                `Preparing fade on ${mixerIndex} Ch ${channelIndex} level ${startLevel} is overriden by ${this.currentOutputLevel[channelIndex]} because fadeActive`
             )
 
             startLevel = this.currentOutputLevel[channelIndex]
@@ -505,12 +518,17 @@ export class MixerGenericConnection {
     }
 
     fadeDown = (mixerIndex: number, channelIndex: number, fadeTime: number) => {
-        let startLevel = state.channels[0].chMixerConnection[mixerIndex].channel[
-            channelIndex].outputLevel
+        let startLevel =
+            state.channels[0].chMixerConnection[mixerIndex].channel[
+                channelIndex
+            ].outputLevel
 
-        if (state.channels[0].chMixerConnection[mixerIndex].channel[channelIndex].fadeActive
-                && this.currentOutputLevel[channelIndex] !== undefined
-            ) {
+        if (
+            state.channels[0].chMixerConnection[mixerIndex].channel[
+                channelIndex
+            ].fadeActive &&
+            this.currentOutputLevel[channelIndex] !== undefined
+        ) {
             startLevel = this.currentOutputLevel[channelIndex]
         }
 
@@ -530,7 +548,7 @@ export class MixerGenericConnection {
         )
 
         logger.trace(
-          `Initiating fade on ${mixerIndex} Ch ${channelIndex} started ${startTimeAsMs}: from ${startLevel} to ${endLevel} at ${startTimeAsMs}`
+            `Initiating fade on ${mixerIndex} Ch ${channelIndex} started ${startTimeAsMs}: from ${startLevel} to ${endLevel} at ${startTimeAsMs}`
         )
 
         this.clearTimer(mixerIndex, channelIndex)
@@ -572,7 +590,7 @@ export class MixerGenericConnection {
             this.currentOutputLevel[channelIndex] = endLevel
 
             logger.trace(
-              `Finishing fade on ${mixerIndex} Ch ${channelIndex} started ${startTimeAsMs}: from ${startLevel} to ${endLevel}, fadeTime: ${fadeTime}, elapsed: ${elapsedTimeMS}`
+                `Finishing fade on ${mixerIndex} Ch ${channelIndex} started ${startTimeAsMs}: from ${startLevel} to ${endLevel}, fadeTime: ${fadeTime}, elapsed: ${elapsedTimeMS}`
             )
             this.mixerConnection[mixerIndex].updateFadeIOLevel(
                 channelIndex,
@@ -590,17 +608,20 @@ export class MixerGenericConnection {
             return true
         }
 
-        const diff = (endLevel - startLevel)
+        const diff = endLevel - startLevel
         const progress = Math.max(0, Math.min(1, elapsedTimeMS / fadeTime))
         const newLevel = startLevel + diff * progress
 
         this.currentOutputLevel[channelIndex] = newLevel
 
         logger.trace(
-          `Doing fade on ${mixerIndex} Ch ${channelIndex} started ${startTimeAsMs}: from ${startLevel} to ${endLevel}, level: ${newLevel}, progress: ${progress}, fadeTime: ${fadeTime}, elapsed: ${elapsedTimeMS}`
+            `Doing fade on ${mixerIndex} Ch ${channelIndex} started ${startTimeAsMs}: from ${startLevel} to ${endLevel}, level: ${newLevel}, progress: ${progress}, fadeTime: ${fadeTime}, elapsed: ${elapsedTimeMS}`
         )
 
-        this.mixerConnection[mixerIndex].updateFadeIOLevel(channelIndex, newLevel)
+        this.mixerConnection[mixerIndex].updateFadeIOLevel(
+            channelIndex,
+            newLevel
+        )
 
         store.dispatch({
             type: ChannelActionTypes.SET_OUTPUT_LEVEL,
@@ -608,6 +629,10 @@ export class MixerGenericConnection {
             channel: channelIndex,
             level: endLevel,
         })
-        sendChLevelsToOuputServer(mixerIndex, channelIndex, this.currentOutputLevel[channelIndex])
+        sendChLevelsToOuputServer(
+            mixerIndex,
+            channelIndex,
+            this.currentOutputLevel[channelIndex]
+        )
     }
 }

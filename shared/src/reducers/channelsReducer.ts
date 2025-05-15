@@ -1,7 +1,5 @@
 import { logger } from '../../../server/src/utils/logger'
-import {
-    ChannelActionTypes,
-} from '../actions/channelActions'
+import { ChannelActionTypes } from '../actions/channelActions'
 import { RootAction, RootState } from './indexReducer'
 
 export interface Channels {
@@ -73,7 +71,7 @@ export const channels = (
     fullState?: RootState
 ): Array<Channels> => {
     if (!(action.type in ChannelActionTypes)) {
-        return state;
+        return state
     }
     let nextState = [
         {
@@ -81,10 +79,19 @@ export const channels = (
         },
     ]
 
-    if ('mixerIndex' in action && nextState[0].chMixerConnection[action.mixerIndex] === undefined) {
+    if (
+        'mixerIndex' in action &&
+        nextState[0].chMixerConnection[action.mixerIndex] === undefined
+    ) {
         return nextState
     }
-    if ('mixerIndex' in action && 'channel' in action && nextState[0].chMixerConnection[action.mixerIndex]?.channel[action.channel] === undefined) {
+    if (
+        'mixerIndex' in action &&
+        'channel' in action &&
+        nextState[0].chMixerConnection[action.mixerIndex]?.channel[
+            action.channel
+        ] === undefined
+    ) {
         return nextState
     }
 
@@ -98,7 +105,10 @@ export const channels = (
             nextState = defaultChannelsReducerState(action.numberOfTypeChannels)
 
             action.allState.chMixerConnection.forEach(
-                (allStateChMixerConnection: ChMixerConnection, mixerIndex: number) => {
+                (
+                    allStateChMixerConnection: ChMixerConnection,
+                    mixerIndex: number
+                ) => {
                     let typeIndex = 0
                     let chIndexInType = 0
                     let chIndexInState = 0
@@ -106,35 +116,52 @@ export const channels = (
                         (allStateChannel: any, index: number) => {
                             // Only proceed if channel type is equal or greater than the current type index
                             // To avoid setting state for channel types that has been removed, or ingesting channels out of order
-                            if (allStateChannel.channelType >= typeIndex &&
-                                action.numberOfTypeChannels[mixerIndex].numberOfTypeInCh.length > allStateChannel.channelType
+                            if (
+                                allStateChannel.channelType >= typeIndex &&
+                                action.numberOfTypeChannels[mixerIndex]
+                                    .numberOfTypeInCh.length >
+                                    allStateChannel.channelType
                             ) {
                                 // If new channel type:
                                 if (allStateChannel.channelType > typeIndex) {
                                     typeIndex = allStateChannel.channelType
                                     chIndexInType = 0
                                     // Set channel index in state to the first channel of the new type
-                                   // Can happen if number of channels has been changed in settings
-                                    chIndexInState = nextState[0].chMixerConnection[mixerIndex].channel.findIndex(
-                                        (channel: Channel) => channel.channelType === typeIndex
-                                    )
+                                    // Can happen if number of channels has been changed in settings
+                                    chIndexInState =
+                                        nextState[0].chMixerConnection[
+                                            mixerIndex
+                                        ].channel.findIndex(
+                                            (channel: Channel) =>
+                                                channel.channelType ===
+                                                typeIndex
+                                        )
                                 }
 
                                 // Only set channel state if it exists in next state
                                 // And only if it does not exceed the number of channels in the type
                                 // This is to avoid setting state for channels that has been removed
-                                if (nextState[0].chMixerConnection[mixerIndex].channel[chIndexInState] !== undefined &&
-                                    action.numberOfTypeChannels[mixerIndex].numberOfTypeInCh[typeIndex] > chIndexInType &&
+                                if (
+                                    nextState[0].chMixerConnection[mixerIndex]
+                                        .channel[chIndexInState] !==
+                                        undefined &&
+                                    action.numberOfTypeChannels[mixerIndex]
+                                        .numberOfTypeInCh[typeIndex] >
+                                        chIndexInType &&
                                     chIndexInState > -1
                                 ) {
                                     nextState[0].chMixerConnection[
                                         mixerIndex
                                     ].channel[chIndexInState] =
-                                    allStateChMixerConnection.channel[index]
+                                        allStateChMixerConnection.channel[index]
                                     nextState[0].chMixerConnection[
-                                        mixerIndex].channel[chIndexInState].channelTypeIndex = chIndexInType
+                                        mixerIndex
+                                    ].channel[chIndexInState].channelTypeIndex =
+                                        chIndexInType
                                     nextState[0].chMixerConnection[
-                                        mixerIndex].channel[chIndexInState].channelType = typeIndex
+                                        mixerIndex
+                                    ].channel[chIndexInState].channelType =
+                                        typeIndex
                                 }
                             }
                             chIndexInState++
@@ -155,7 +182,10 @@ export const channels = (
             ].fadeActive = !!action.active
             return nextState
         case ChannelActionTypes.SET_ASSIGNED_FADER:
-            if (nextState[0].chMixerConnection[action.mixerIndex].channel.length > action.channel) {
+            if (
+                nextState[0].chMixerConnection[action.mixerIndex].channel
+                    .length > action.channel
+            ) {
                 nextState[0].chMixerConnection[action.mixerIndex].channel[
                     action.channel
                 ].assignedFader = action.faderNumber
