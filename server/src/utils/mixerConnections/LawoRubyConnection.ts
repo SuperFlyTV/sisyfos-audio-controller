@@ -7,18 +7,16 @@ import {
     FxParam,
     MixerProtocol,
 } from '../../../../shared/src/constants/MixerProtocolInterface'
-import {
-    FaderActionTypes,
-} from '../../../../shared/src/actions/faderActions'
+import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
 import { logger } from '../logger'
-import { SettingsActionTypes} from '../../../../shared/src/actions/settingsActions'
+import { SettingsActionTypes } from '../../../../shared/src/actions/settingsActions'
 import { ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
 import { EmberElement, NumberedTreeNode } from 'emberplus-connection/dist/model'
 import { MixerConnection } from '.'
 
 // TODO - should these be util functions?
 export function floatToDB(f: number, min = -90): number {
-    const scale = (-min - 60) / .0625 // scale for the bottom of the fader
+    const scale = (-min - 60) / 0.0625 // scale for the bottom of the fader
     if (f >= 0.5) {
         return f * 40 - 30 // max dB value: +10.
     } else if (f >= 0.25) {
@@ -34,7 +32,7 @@ export function floatToDB(f: number, min = -90): number {
 
 export function dbToFloat(d: number, min = -90): number {
     let f: number
-    const scale = (-min - 60) / .0625 // scale for the bottom of the fader
+    const scale = (-min - 60) / 0.0625 // scale for the bottom of the fader
 
     if (d < -60) {
         f = (d + -min) / scale
@@ -73,7 +71,6 @@ export class LawoRubyMixerConnection implements MixerConnection {
             mixerIndex: this.mixerIndex,
             mixerOnline: false,
         })
-
 
         this.emberConnection.on('error', (error: any) => {
             if (
@@ -129,9 +126,8 @@ export class LawoRubyMixerConnection implements MixerConnection {
         )
 
         // get the node that contains the sources
-        const sourceNode = await this.emberConnection.getElementByPath(
-            'Ruby.Sources'
-        )
+        const sourceNode =
+            await this.emberConnection.getElementByPath('Ruby.Sources')
         // get the sources
         const req = await this.emberConnection.getDirectory(
             sourceNode as NumberedTreeNode<EmberElement>
@@ -281,30 +277,21 @@ export class LawoRubyMixerConnection implements MixerConnection {
                     logger.trace(
                         `Receiving Level from Ch ${ch}: ${levelInDecibel}`
                     )
-                    const minDeciBel = this.mixerProtocol.channelTypes[typeIndex].fromMixer
-                        .CHANNEL_OUT_GAIN[0].min
+                    const minDeciBel =
+                        this.mixerProtocol.channelTypes[typeIndex].fromMixer
+                            .CHANNEL_OUT_GAIN[0].min
                     if (
                         !state.channels[0].chMixerConnection[this.mixerIndex]
                             .channel[ch - 1].fadeActive &&
-                        levelInDecibel >= minDeciBel
+                        levelInDecibel >=
+                            this.mixerProtocol.channelTypes[typeIndex].fromMixer
+                                .CHANNEL_OUT_GAIN[0].min
                     ) {
-                        const level = dbToFloat(levelInDecibel, minDeciBel)
-                        const isPgm = levelInDecibel > this.mixerProtocol.channelTypes[typeIndex]
-                            .fromMixer.CHANNEL_OUT_GAIN[0].min
-                        
-                        if (isPgm) {
-                            // update the fader, but only if that means it's on-air
-                            store.dispatch  ({
-                                type: FaderActionTypes.SET_FADER_LEVEL,
-                                faderIndex: ch - 1,
-                                level: level,
-                            })
-                        }
-                        // update the output level anyway
-                        store.dispatch  ({
-                            type: ChannelActionTypes.SET_OUTPUT_LEVEL,
-                            mixerIndex: this.mixerIndex,
-                            channel: ch - 1,
+                        // update the fader
+                        const level = dbToFloat(levelInDecibel)
+                        store.dispatch({
+                            type: FaderActionTypes.SET_FADER_LEVEL,
+                            faderIndex: ch - 1,
                             level: level,
                         })
 
@@ -354,7 +341,7 @@ export class LawoRubyMixerConnection implements MixerConnection {
                     logger.trace(`Receiving Gain from Ch ${ch}`)
                     const value = (node.contents as Model.Parameter)
                         .value as number
-                    const level = (value - proto.min) / (proto.max - proto.min)
+                    const level = dbToFloat(value)
                     if (
                         ((node.contents as Model.Parameter).value as number) >
                         proto.min
@@ -476,7 +463,8 @@ export class LawoRubyMixerConnection implements MixerConnection {
                     store.dispatch({
                         type: FaderActionTypes.SET_AMIX,
                         faderIndex: ch - 1,
-                        state: (node.contents as Model.Parameter).value === true,
+                        state:
+                            (node.contents as Model.Parameter).value === true,
                     })
                     global.mainThreadHandler.updatePartialStore(ch - 1)
                 }
@@ -511,14 +499,17 @@ export class LawoRubyMixerConnection implements MixerConnection {
             .getElementByPath(message)
             .then((element: any) => {
                 const v = typeof value === 'string' ? parseFloat(value) : value
-                if (element.contents.value === v) return { response: undefined, sentOk: false } // contents is already the same - a bit risky but yolo
+                if (element.contents.value === v)
+                    return { response: undefined, sentOk: false } // contents is already the same - a bit risky but yolo
 
                 logger.trace(`Sending out message: ${message}`)
                 return this.emberConnection.setValue(element, v)
             })
             .then((req) => req.response)
             .catch((error: any) => {
-                logger.data(error).error('Ember Error for ' + message + ' -> ' + value)
+                logger
+                    .data(error)
+                    .error('Ember Error for ' + message + ' -> ' + value)
             })
     }
 
@@ -536,23 +527,16 @@ export class LawoRubyMixerConnection implements MixerConnection {
     }
 
     updateFadeIOLevel(channelIndex: number, outputLevel: number) {
-        let channelType =
+        const channelType =
             state.channels[0].chMixerConnection[this.mixerIndex].channel[
                 channelIndex
             ].channelType
-        let channelTypeIndex =
+        const channelTypeIndex =
             state.channels[0].chMixerConnection[this.mixerIndex].channel[
                 channelIndex
             ].channelTypeIndex
-        let protocol =
-            this.mixerProtocol.channelTypes[channelType].toMixer
-                .CHANNEL_OUT_GAIN[0]
 
-        const level = floatToDB(
-            outputLevel, 
-            this.mixerProtocol.channelTypes[channelType].toMixer
-                .CHANNEL_OUT_GAIN[0].min
-        )
+        const level = floatToDB(outputLevel)
 
         this.sendOutLevelMessage(channelTypeIndex + 1, level)
     }
@@ -628,13 +612,13 @@ export class LawoRubyMixerConnection implements MixerConnection {
             state.channels[0].chMixerConnection[this.mixerIndex].channel[
                 channelIndex
             ]
-        let channelType = channel.channelType
-        let channelTypeIndex = channel.channelTypeIndex
-        let protocol =
+        const channelType = channel.channelType
+        const channelTypeIndex = channel.channelTypeIndex
+        const protocol =
             this.mixerProtocol.channelTypes[channelType].toMixer
                 .CHANNEL_INPUT_GAIN[0]
 
-        let level = gain * (protocol.max - protocol.min) + protocol.min
+        const level = floatToDB(gain)
 
         this.sendOutMessage(
             protocol.mixerMessage,
