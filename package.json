@@ -30,25 +30,22 @@
     ],
     "engines": {
         "node": ">=18.15.0",
-        "yarn": ">=4.1.0"
+        "yarn": ">=1.22.0"
     },
-    "packageManager": "yarn@4.1.0",
     "private": true,
     "workspaces": [
         "client",
         "server",
         "shared",
-        "desktop",
-        "component-lib"
+        "desktop"
     ],
     "scripts": {
         "start": "cross-env NODE_ENV=production node server/dist/server",
         "start:dev": "cross-env NODE_ENV=development node --inspect server/dist/server",
         "start:local": "cross-env NODE_ENV=local node --inspect server/dist/server",
-        "build": "yarn build:client && yarn build:server && yarn build:component-lib",
+        "build": "yarn build:client && yarn build:server",
         "build:client": "yarn --cwd ./client build",
         "build:server": "yarn --cwd ./server build",
-        "build:component-lib": "yarn --cwd ./component-lib build",
         "build:desktop": "yarn --cwd ./desktop build",
         "watch": "concurrently --kill-others \"yarn watch:server\" \"yarn watch:client\"",
         "watch:client": "yarn --cwd ./client watch",
@@ -78,7 +75,7 @@
     },
     "devDependencies": {
         "concurrently": "^8.2.2",
-        "lint-staged": "^15.2.10",
+        "lint-staged": "^15.2.0",
         "node-license-validator": "^1.3.2",
         "prettier": "^3.2.4",
         "rimraf": "^5.0.5"
