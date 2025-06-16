@@ -283,15 +283,27 @@ export class LawoRubyMixerConnection implements MixerConnection {
                     if (
                         !state.channels[0].chMixerConnection[this.mixerIndex]
                             .channel[ch - 1].fadeActive &&
-                        levelInDecibel >=
+                        levelInDecibel >= minDeciBel
+                    ) {
+                        const level = dbToFloat(levelInDecibel, minDeciBel)
+                        const isPgm =
+                            levelInDecibel >
                             this.mixerProtocol.channelTypes[typeIndex].fromMixer
                                 .CHANNEL_OUT_GAIN[0].min
-                    ) {
-                        // update the fader
-                        const level = dbToFloat(levelInDecibel)
+
+                        if (isPgm) {
+                            // update the fader, but only if that means it's on-air
+                            store.dispatch({
+                                type: FaderActionTypes.SET_FADER_LEVEL,
+                                faderIndex: ch - 1,
+                                level: level,
+                            })
+                        }
+                        // update the output level anyway
                         store.dispatch({
-                            type: FaderActionTypes.SET_FADER_LEVEL,
-                            faderIndex: ch - 1,
+                            type: ChannelActionTypes.SET_OUTPUT_LEVEL,
+                            mixerIndex: this.mixerIndex,
+                            channel: ch - 1,
                             level: level,
                         })
 
@@ -536,7 +548,11 @@ export class LawoRubyMixerConnection implements MixerConnection {
                 channelIndex
             ].channelTypeIndex
 
-        const level = floatToDB(outputLevel)
+        const level = floatToDB(
+            outputLevel,
+            this.mixerProtocol.channelTypes[channelType].toMixer
+                .CHANNEL_OUT_GAIN[0].min
+        )
 
         this.sendOutLevelMessage(channelTypeIndex + 1, level)
     }
