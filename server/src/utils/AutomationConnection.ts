@@ -88,8 +88,9 @@ export class AutomationConnection {
                 global.mainThreadHandler.updatePartialStore(ch - 1)
             }
 
-            logger
-                .debug(`RECEIVED AUTOMATION MESSAGE: ${message.address}`, { data: { message } })
+            logger.debug(`RECEIVED AUTOMATION MESSAGE: ${message.address}`, {
+                data: { message },
+            })
 
             // Set state of Sisyfos:
             if (check('CHANNEL_PGM_ON_OFF')) {
@@ -228,7 +229,7 @@ export class AutomationConnection {
                         inputGain: apiState.inputGain ?? oldState.inputGain,
                         inputSelector:
                             apiState.inputSelector ?? oldState.inputSelector,
-                        label: apiState.label ?? oldState.label,
+                        label: apiState.label || oldState.label,
                     }
                     store.dispatch({
                         type: FaderActionTypes.SET_SINGLE_FADER_STATE,
