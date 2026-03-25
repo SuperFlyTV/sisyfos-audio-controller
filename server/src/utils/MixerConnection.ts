@@ -31,7 +31,6 @@ import { ChannelReference } from '../../../shared/src/reducers/fadersReducer'
 import { sendChLevelsToOuputServer } from './outputLevelServer'
 import { MixerConnection } from './mixerConnections'
 import { SecondOutRowButtonType } from '../../../shared/src/reducers/settingsReducer'
-import { LawoMC2Connection } from './mixerConnections/LawoMC2Connection'
 import { DHDMixerConnection } from './mixerConnections/DHDConnection'
 import { LawoMC2Connection } from './mixerConnections/LawoMC2Connection'
 
@@ -241,6 +240,7 @@ export class MixerGenericConnection {
         fadeTime: number,
         mixerIndexToSkip: number = -1
     ) => {
+        if (!state.faders[0].fader[faderIndex]) return
         if (fadeTime === -1) {
             if (state.faders[0].fader[faderIndex].voOn) {
                 fadeTime = state.settings[0].voFadeTime
@@ -280,6 +280,7 @@ export class MixerGenericConnection {
     }
 
     updateInputGain = (faderIndex: number) => {
+        if (!state.faders[0].fader[faderIndex]) return
         let level = state.faders[0].fader[faderIndex].inputGain
         state.faders[0].fader[faderIndex].assignedChannels?.forEach(
             (assignedChannel: ChannelReference) => {
