@@ -1,16 +1,13 @@
-## Important! This repository is not actively maintained
-If you are planning to send a PR or open an issue, we suggest sending it to https://github.com/olzzon/sisyfos-audio-controller which is an actively maintained fork of this codebase. We may merge code from that repository at our discretion.
-
 # Sisyfos Audio Controller
 
-[![Node CI](https://github.com/tv2/sisyfos-audio-controller/actions/workflows/deploy-image.yml/badge.svg)](https://github.com/tv2/sisyfos-audio-controller/actions/workflows/deploy-image.yml)
+[![Node CI](https://github.com/Sofie-Automation/sisyfos-audio-controller/actions/workflows/deploy-image.yml/badge.svg)](https://github.com/Sofie-Automation/sisyfos-audio-controller/actions/workflows/deploy-image.yml)
 
 ## Audiomixer control build for intelligent automation.
 
 You use the fader for the level, and PGM on/off for fade-in/out.
 TAKE NEXT crossfades from NEXT to PGM
 
-It´s fast to see what faders are on-aie, and whether they are PGM level or Voiceover level
+It´s fast to see what faders are on-air, and whether they are PGM level or Voiceover level
 
 ### GUI with open channelstrip:
 
@@ -66,17 +63,17 @@ Routing setups can be stored in STORAGE. So it´s possible to have different Rou
 ### Run as Docker: (On linux)
 
 ```
-docker pull tv2media/sisyfos-audio-controller:develop
+docker pull Sofie-Automation/sisyfos-audio-controller:develop
 docker volume create sisyfos-vol
-sudo docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage --network="host" --restart always tv2media/sisyfos-audio-controller:develop
+sudo docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage --network="host" --restart always Sofie-Automation/sisyfos-audio-controller:develop
 ```
 
 ### Run as Docker: (On windows)
 
 ```
-docker pull tv2media/sisyfos-audio-controller:develop
+docker pull Sofie-Automation/sisyfos-audio-controller:develop
 docker volume create sisyfos-vol
-docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage -p 1176:1176 -p 5255:5255 --restart always tv2media/sisyfos-audio-controller:develop
+docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage -p 1176:1176 -p 5255:5255 --restart always Sofie-Automation/sisyfos-audio-controller:develop
 ```
 
 ### Install Local node host:
@@ -84,7 +81,7 @@ docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/stora
 (Be aware that a server reload will quit server and you need an external source to restart)
 
 ```
-git clone https://github.com/tv2media/sisyfos-audio-controller.git
+git clone https://github.com/Sofie-Automation/sisyfos-audio-controller.git
 cd sisyfos-audio-controller
 yarn
 yarn build
