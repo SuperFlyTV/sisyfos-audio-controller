@@ -2,6 +2,7 @@ import { babel } from '@rollup/plugin-babel';
 import postcss from 'rollup-plugin-postcss';
 import typescript from '@rollup/plugin-typescript';
 import commonjs from '@rollup/plugin-commonjs';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 import svgr from '@svgr/rollup';
 import path from 'path';
 
@@ -15,6 +16,10 @@ export default {
     },
   ],
   plugins: [
+    nodeResolve({
+      browser: true,
+      preferBuiltins: false,
+    }),
     commonjs(),
     postcss({
       extract: path.resolve('dist/styles.css'), // Extract CSS to a single file
@@ -31,7 +36,9 @@ export default {
     svgr()
   ],
   external: [
-    'react', // Prevent bundling react
-    'react-dom' // Prevent bundling react-dom
+    'react',
+    'react-dom',
+    'react-redux',
+    'redux',
   ],
 };

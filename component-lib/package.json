@@ -21,6 +21,7 @@
   "types": "./dist/component-lib/src/index.d.ts",
   "dependencies": {
     "@floating-ui/react": "^0.26.20",
+    "@reduxjs/toolkit": "^2.12.0",
     "classnames": "^2.5.1",
     "i18next": "^20.6.1",
     "i18next-browser-languagedetector": "^7.2.0",
@@ -49,6 +50,7 @@
     "@babel/preset-typescript": "^7.24.7",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^11.1.6",
     "@svgr/rollup": "^8.1.0",
     "react": "^18.2.0",
