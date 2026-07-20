@@ -20,23 +20,23 @@
         "typescript": "^5.6.3"
     },
     "dependencies": {
-        "@babel/core": "^7.23.9",
+        "@babel/core": "^7.26.10",
         "@tv2media/logger": "^2.0.2",
         "atem-connection": "^3.4.0",
         "casparcg-connection": "^5.1.0",
         "emberplus-connection": "^0.3.0",
         "express": "^4.18.2",
         "node-emberplus": "^3.0.8",
-        "node-vmix": "github:tv2norge-collab/node-vmix#dist",
+        "node-vmix": "patch:node-vmix@https%3A//github.com/tv2norge-collab/node-vmix.git%23commit=777c0eb25427fab4b09218d736e78e416e8b4fec#~/.yarn/patches/node-vmix-https-b566bcb416.patch",
         "osc": "^2.4.5",
         "performance-now": "^2.1.0",
         "redux": "^5.0.1",
         "shared": "*",
         "socket.io": "^4.7.4",
         "tslib": "^2.6.2",
-        "vmix-js-utils": "^4.0.19",
+        "vmix-js-utils": "patch:vmix-js-utils@npm%3A4.0.19#~/.yarn/patches/vmix-js-utils-npm-4.0.19-cfd45f1970.patch",
         "web-midi-api": "^2.2.5",
         "webmidi": "^2.5.1",
-        "ws": "^8.18.3"
+        "ws": "^8.21.0"
     }
 }

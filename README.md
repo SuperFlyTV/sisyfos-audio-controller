@@ -62,6 +62,8 @@ Routing setups can be stored in STORAGE. So it´s possible to have different Rou
 
 ### Run as Docker: (On linux)
 
+Images are published to GitHub Container Registry for the repository that built them (`ghcr.io/<owner>/sisyfos-audio-controller`).
+
 ```
 docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:develop
 docker volume create sisyfos-vol

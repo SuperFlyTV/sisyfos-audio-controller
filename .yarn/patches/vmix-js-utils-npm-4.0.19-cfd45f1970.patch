@@ -1,0 +1,12 @@
+diff --git a/package.json b/package.json
+index 2ca2a547f00b8b2834669eabeaf3cc287361c3a5..1efa138f722cc2f32886cda9fdac9d0ea54fa66a 100644
+--- a/package.json
++++ b/package.json
+@@ -38,7 +38,6 @@
+   "dependencies": {
+     "@xmldom/xmldom": "^0.8.10",
+     "lodash": "^4.17.21",
+-    "querystring": "^0.2.1",
+     "xpath": "^0.0.34"
+   },
+   "devDependencies": {

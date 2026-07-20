@@ -11,7 +11,7 @@ jobs:
         with:
             dry-run: false
             prune-untagged: true
-            package-name: sisyfos-audio-controller
+            package-name: ${{ github.event.repository.name }}
             tags-to-keep-regex: |
                 ^v(\d+)
                 ^develop$
