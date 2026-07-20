@@ -1,6 +1,6 @@
 # Sisyfos Audio Controller
 
-[![Node CI](https://github.com/tv2/sisyfos-audio-controller/actions/workflows/deploy-image.yml/badge.svg)](https://github.com/tv2/sisyfos-audio-controller/actions/workflows/deploy-image.yml)
+[![Dev Node CI](https://github.com/Sofie-Automation/sisyfos-audio-controller/actions/workflows/node-ci.dev.yml/badge.svg)](https://github.com/Sofie-Automation/sisyfos-audio-controller/actions/workflows/node-ci.dev.yml)
 
 ## Audiomixer control build for intelligent automation.
 
@@ -63,17 +63,17 @@ Routing setups can be stored in STORAGE. So it´s possible to have different Rou
 ### Run as Docker: (On linux)
 
 ```
-docker pull olzzon/sisyfos-audio-controller:develop
+docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:develop
 docker volume create sisyfos-vol
-sudo docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage --network="host" --restart always olzzon/sisyfos-audio-controller:develop
+sudo docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage --network="host" --restart always ghcr.io/sofie-automation/sisyfos-audio-controller:develop
 ```
 
 ### Run as Docker: (On windows)
 
 ```
-docker pull olzzon/sisyfos-audio-controller:develop
+docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:develop
 docker volume create sisyfos-vol
-docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage -p 1176:1176 -p 5255:5255 --restart always olzzon/sisyfos-audio-controller:develop
+docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage -p 1176:1176 -p 5255:5255 --restart always ghcr.io/sofie-automation/sisyfos-audio-controller:develop
 ```
 
 ### Install Local node host:
@@ -81,7 +81,7 @@ docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/stora
 (Be aware that a server reload will quit server and you need an external source to restart)
 
 ```
-git clone https://github.com/olzzon/sisyfos-audio-controller.git
+git clone https://github.com/Sofie-Automation/sisyfos-audio-controller.git
 cd sisyfos-audio-controller
 yarn
 yarn build
