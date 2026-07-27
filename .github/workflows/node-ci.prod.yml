@@ -178,6 +178,8 @@ jobs:
         steps:
             - name: Access repository
               uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
@@ -253,7 +255,7 @@ jobs:
             - name: Access repository
               uses: actions/checkout@v4
               with:
-                  ref: ${{ needs.bump-version.outputs.commit_sha || github.ref }}
+                  fetch-depth: 0
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
@@ -267,7 +269,7 @@ jobs:
               run: corepack prepare yarn@${{ env.yarn-version }} --activate
 
             - name: Ensure commits from bump-version
-              if: needs.bump-version.outputs.commit_sha != ''
+              if: needs.bump-version.outputs.bumped == 'true'
               run: git pull
 
             - name: Get Yarn cache directory
@@ -319,7 +321,7 @@ jobs:
             - name: Access repository
               uses: actions/checkout@v4
               with:
-                  ref: ${{ needs.bump-version.outputs.commit_sha || github.ref }}
+                  fetch-depth: 0
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
@@ -333,6 +335,7 @@ jobs:
               run: corepack prepare yarn@${{ env.yarn-version }} --activate
 
             - name: Ensure commits from bump-version
+              if: needs.bump-version.outputs.bumped == 'true'
               run: git pull
 
             - name: Get Yarn cache directory
@@ -403,7 +406,7 @@ jobs:
             - name: Access repository
               uses: actions/checkout@v4
               with:
-                  ref: ${{ needs.bump-version.outputs.commit_sha }}
+                  fetch-depth: 0
             - name: Ensure commits from bump-version
               run: git pull
             - uses: actions/download-artifact@v4
