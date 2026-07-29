@@ -85,7 +85,7 @@ docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:feature-eav-344-ab
 
 - **CI** runs on every push and pull request (all branches): test, validate dependencies, prebuild.
 - **Production release:** Actions → Prod Node CI → Run workflow. CI assigns the next CalVer (`YY.MM.N`), updates `CHANGELOG.md`, creates a git tag, GitHub Release, and GHCR image.
-- **Test image:** Actions → Dev Node CI → Run workflow → enter branch name. Same branch + commit always produces the same image tag.
+- **Test image:** Actions → Dev Node CI → Run workflow (select branch). Same branch + commit always produces the same image tag.
 
 Desktop installers are attached to [GitHub Releases](https://github.com/Sofie-Automation/sisyfos-audio-controller/releases).
 
