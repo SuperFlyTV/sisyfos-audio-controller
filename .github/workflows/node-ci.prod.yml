@@ -1,15 +1,9 @@
 #######################################################################################################################
 #
-#   Node CI - Production
+#   Prod Release
 #
-#   The workflow ensures quality for the build, builds the project and publishes it to the configured destinations.
-#   There are the following destinations:
-#
-#   [Github Release]
-#     The destination is only triggered if the secret 'RELEASE_TO_GITHUB' is set to a non-empty value.
-#
-#   [GHCR]
-#     Container images are published to ghcr.io/<owner>/<repo> for the repository running the workflow.
+#   Manual workflow_dispatch from main. Computes CalVer (YY.MM.N), updates CHANGELOG, tags, builds,
+#   publishes GitHub Release and GHCR container image.
 #
 #######################################################################################################################
 name: Prod Node CI
@@ -24,12 +18,6 @@ env:
     yarn-version: 4.1.0
 
 on:
-    push:
-        branches:
-            - 'master'
-            - 'main'
-        tags:
-            - 'v[0-9]+.[0-9]+.[0-9]+'
     workflow_dispatch:
 
 jobs:
@@ -39,6 +27,7 @@ jobs:
             - name: Access repository
               uses: actions/checkout@v4
               with:
+                  ref: main
                   fetch-depth: 0
 
             - name: Setup Node.js
@@ -83,6 +72,8 @@ jobs:
         steps:
             - name: Access repository
               uses: actions/checkout@v4
+              with:
+                  ref: main
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
@@ -129,6 +120,8 @@ jobs:
         steps:
             - name: Access repository
               uses: actions/checkout@v4
+              with:
+                  ref: main
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
@@ -148,6 +141,8 @@ jobs:
         steps:
             - name: Access repository
               uses: actions/checkout@v4
+              with:
+                  ref: main
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
@@ -162,23 +157,21 @@ jobs:
 
             - uses: ./.github/actions/validate-dependencies
 
-    bump-version:
-        if: github.ref_type == 'branch'
+    calver-release:
         runs-on: ubuntu-latest
         needs:
             - prebuild
             - test
             - validate-dependencies
         outputs:
-            tag_version: ${{ steps.tag_version.outputs.new_tag || steps.tag_version.outputs.previous_tag }}
-            version: ${{ steps.tag_version.outputs.new_version || steps.tag_version.outputs.previous_version }}
-            changelog: ${{ steps.tag_version.outputs.changelog }}
-            bumped: ${{ steps.tag_version.outputs.new_tag != '' }}
-            commit_sha: ${{ steps.commit_sha.outputs.commit_sha }}
+            version: ${{ steps.calver.outputs.version }}
+            tag: ${{ steps.calver.outputs.tag }}
+            changelog: ${{ steps.calver.outputs.changelog }}
         steps:
             - name: Access repository
               uses: actions/checkout@v4
               with:
+                  ref: main
                   fetch-depth: 0
 
             - name: Setup Node.js
@@ -186,75 +179,19 @@ jobs:
               with:
                   node-version: ${{ env.node-version }}
 
-            - name: Enable Corepack
-              run: corepack enable
-
-            - name: Set Yarn Version
-              run: corepack prepare yarn@${{ env.yarn-version }} --activate
-
-            - name: Configure committer
-              run: |
-                  git config user.name "${{ github.event.pusher.name }}"
-                  git config user.email "${{ github.event.pusher.email }}"
-            - name: Bump version and push tag
-              id: tag_version
-              uses: mathieudutour/github-tag-action@v6.1
-              with:
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
-                  default_bump: false
-            - name: Update package.json
-              if: steps.tag_version.outputs.new_tag != ''
-              uses: jossef/action-set-json-field@v2.1
-              with:
-                  file: package.json
-                  field: version
-                  value: ${{ steps.tag_version.outputs.new_version }}
-            - name: Update CHANGELOG.md
-              env:
-                  changes: ${{ steps.tag_version.outputs.changelog }}
-              run: |
-                  echo "$changes" > /tmp/tmp-changelog.md
-                  [ -f CHANGELOG.md ] && cat CHANGELOG.md >> /tmp/tmp-changelog.md
-                  mv /tmp/tmp-changelog.md CHANGELOG.md
-
-            - name: Commit and push changes to package.json and CHANGELOG.md
-              id: commit_sha
-              if: steps.tag_version.outputs.new_tag != ''
-              uses: EndBug/add-and-commit@v9
-              with:
-                  add: "['package.json', 'CHANGELOG.md']"
-
-    create-pull-request-develop:
-        runs-on: ubuntu-latest
-        if: needs.bump-version.outputs.bumped == 'true'
-        needs:
-            - bump-version
-        steps:
-            - name: Access repository
-              uses: actions/checkout@v4
-            - name: Pull request to develop
-              id: develop
-              continue-on-error: true
-              uses: repo-sync/pull-request@v2
-              with:
-                  destination_branch: 'develop'
-                  github_token: ${{ secrets.GITHUB_TOKEN }}
-                  pr_label: 'release, automated-pr'
-                  pr_title: 'Release ${{ needs.bump-version.outputs.version }} -> develop'
-            - name: Report status
-              env:
-                  report: ${{ toJSON(steps.develop.outcome) }} - ${{ toJSON(steps.develop.conclusion) }}
-              run: echo $report
+            - name: Bump CalVer, update CHANGELOG, commit and tag
+              id: calver
+              run: node .github/scripts/calver-release.mjs --commit --tag --github-output "$GITHUB_OUTPUT"
 
     build:
-        if: always() && !failure() && !cancelled()
         runs-on: ubuntu-latest
         needs:
-            - bump-version
+            - calver-release
         steps:
             - name: Access repository
               uses: actions/checkout@v4
               with:
+                  ref: ${{ needs.calver-release.outputs.tag }}
                   fetch-depth: 0
 
             - name: Setup Node.js
@@ -267,10 +204,6 @@ jobs:
 
             - name: Set Yarn Version
               run: corepack prepare yarn@${{ env.yarn-version }} --activate
-
-            - name: Ensure commits from bump-version
-              if: needs.bump-version.outputs.bumped == 'true'
-              run: git pull
 
             - name: Get Yarn cache directory
               id: yarn-cache-dir
@@ -315,12 +248,13 @@ jobs:
     build-desktop:
         runs-on: windows-latest
         needs:
-            - bump-version
+            - calver-release
             - build
         steps:
             - name: Access repository
               uses: actions/checkout@v4
               with:
+                  ref: ${{ needs.calver-release.outputs.tag }}
                   fetch-depth: 0
 
             - name: Setup Node.js
@@ -333,10 +267,6 @@ jobs:
 
             - name: Set Yarn Version
               run: corepack prepare yarn@${{ env.yarn-version }} --activate
-
-            - name: Ensure commits from bump-version
-              if: needs.bump-version.outputs.bumped == 'true'
-              run: git pull
 
             - name: Get Yarn cache directory
               id: yarn-cache-dir
@@ -382,56 +312,49 @@ jobs:
                   name: ${{ github.event.repository.name }}-desktop
                   path: desktop/dist
 
-    check-github-release:
-        runs-on: ubuntu-latest
-        needs: build-desktop
-        outputs:
-            defined: ${{ steps.release.outputs.defined == 'true' }}
-        steps:
-            - name: Access repository
-              uses: actions/checkout@v4
-            - name: Check if is set to release
-              id: release
-              uses: ./.github/actions/check-secret
-              with:
-                  secret: ${{ secrets.RELEASE_TO_GITHUB }}
-
     publish-github-release:
         runs-on: ubuntu-latest
-        if: needs.bump-version.outputs.bumped == 'true' && needs.check-github-release.outputs.defined == 'true'
         needs:
-            - bump-version
-            - check-github-release
+            - calver-release
+            - build-desktop
         steps:
             - name: Access repository
               uses: actions/checkout@v4
               with:
+                  ref: ${{ needs.calver-release.outputs.tag }}
                   fetch-depth: 0
-            - name: Ensure commits from bump-version
-              run: git pull
+
             - uses: actions/download-artifact@v4
               with:
                   name: ${{ github.event.repository.name }}-desktop
                   path: desktop/dist
-            - name: Compress artifact to zip
-              uses: papeloto/action-zip@v1
+
+            - name: Compress desktop artifact to zip
+              working-directory: desktop/dist
+              run: |
+                  zip -r "../../${{ github.event.repository.name }}-${{ needs.calver-release.outputs.version }}.zip" .
+
+            - name: Create GitHub release
+              uses: softprops/action-gh-release@v2
               with:
-                  files: dist
-                  dest: '${{ github.event.repository.name }}-${{ needs.bump-version.outputs.version }}.zip'
-            - name: Create Github release with desktop exe
-              uses: softprops/action-gh-release@v1
-              with:
-                  name: Release ${{ needs.bump-version.outputs.tag_version }}
-                  tag_name: ${{ needs.bump-version.outputs.tag_version }}
-                  body: ${{ needs.bump-version.outputs.changelog }}
+                  name: Release ${{ needs.calver-release.outputs.tag }}
+                  tag_name: ${{ needs.calver-release.outputs.tag }}
+                  body: |
+                      ## Docker
+
+                      ```
+                      docker pull ghcr.io/${{ github.repository }}:${{ needs.calver-release.outputs.version }}
+                      ```
+
+                      ${{ needs.calver-release.outputs.changelog }}
                   files: |
+                      ${{ github.event.repository.name }}-${{ needs.calver-release.outputs.version }}.zip
                       desktop/dist/*.exe
-                      desktop/dist/*.dmg
+                  # TODO: macOS releases: desktop/dist/*.dmg
 
     publish-container-image:
-        if: always() && !failure() && !cancelled()
         needs:
-            - bump-version
+            - calver-release
             - build
         runs-on: ubuntu-latest
         permissions:
@@ -440,6 +363,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
               with:
+                  ref: ${{ needs.calver-release.outputs.tag }}
                   persist-credentials: false
 
             - name: Create the image tags
@@ -448,11 +372,8 @@ jobs:
               with:
                   images: ghcr.io/${{ github.repository }}
                   tags: |
-                      type=ref,event=branch
-                      type=ref,event=tag
-                      type=raw,value=latest,enable={{is_default_branch}}
-                      type=semver,pattern={{version}}
-                      type=semver,pattern={{major}}.{{minor}}
+                      type=raw,value=${{ needs.calver-release.outputs.version }}
+                      type=raw,value=latest
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v4

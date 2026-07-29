@@ -70,8 +70,7 @@ jobs:
                   keep-younger-than: 14
                   keep-last: 10
                   keep-tags-regexes: |
-                      ^v(\d+)
-                      ^develop$
-                      ^main$
                       ^latest$
+                      ^[\d]{2}\.[\d]{2}\.[\d]+$
+                      ^[\w.-]+-[a-f0-9]{7}$
                   prune-tags-regexes: .*

@@ -1,6 +1,6 @@
 # Sisyfos Audio Controller
 
-[![Dev Node CI](https://github.com/Sofie-Automation/sisyfos-audio-controller/actions/workflows/node-ci.dev.yml/badge.svg)](https://github.com/Sofie-Automation/sisyfos-audio-controller/actions/workflows/node-ci.dev.yml)
+[![CI](https://github.com/Sofie-Automation/sisyfos-audio-controller/actions/workflows/ci.yml/badge.svg)](https://github.com/Sofie-Automation/sisyfos-audio-controller/actions/workflows/ci.yml)
 
 ## Audiomixer control build for intelligent automation.
 
@@ -60,23 +60,34 @@ Routing of Faders to multiple channels or a single channel are possible. This wa
 
 Routing setups can be stored in STORAGE. So it´s possible to have different Routings dependent of what setup the Audio mixer is using.
 
-### Run as Docker: (On linux)
+### Run as Docker
 
-Images are published to GitHub Container Registry for the repository that built them (`ghcr.io/<owner>/sisyfos-audio-controller`).
+Images are published to GitHub Container Registry (`ghcr.io/<owner>/sisyfos-audio-controller`).
+
+**Production** — CalVer releases (e.g. `26.07.0`). Pull a specific version or `latest`:
 
 ```
-docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:develop
+docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:26.07.0
+docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:latest
 docker volume create sisyfos-vol
-sudo docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage --network="host" --restart always ghcr.io/sofie-automation/sisyfos-audio-controller:develop
+docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage -p 1176:1176 -p 5255:5255 --restart always ghcr.io/sofie-automation/sisyfos-audio-controller:latest
 ```
 
-### Run as Docker: (On windows)
+On Linux, add `--network="host"` instead of port mappings if needed.
+
+**Test / branch builds** — published manually via Actions → Dev Node CI. Tag format: `{branch}-{commit-sha}` (e.g. `feature-eav-344-abc1234`):
 
 ```
-docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:develop
-docker volume create sisyfos-vol
-docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage -p 1176:1176 -p 5255:5255 --restart always ghcr.io/sofie-automation/sisyfos-audio-controller:develop
+docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:feature-eav-344-abc1234
 ```
+
+### CI and releases
+
+- **CI** runs on every push and pull request (all branches): test, validate dependencies, prebuild.
+- **Production release:** Actions → Prod Node CI → Run workflow. CI assigns the next CalVer (`YY.MM.N`), updates `CHANGELOG.md`, creates a git tag, GitHub Release, and GHCR image.
+- **Test image:** Actions → Dev Node CI → Run workflow → enter branch name. Same branch + commit always produces the same image tag.
+
+Desktop installers are attached to [GitHub Releases](https://github.com/Sofie-Automation/sisyfos-audio-controller/releases).
 
 ### Install Local node host:
 
@@ -375,11 +386,6 @@ The default behaviour of Sisyfos is to have a target level. This is the level th
 But when either in manual or in auto mode, it's possible to let the fader behave in sync with the audio mixer.
 Settings the "PGM On follows Audio Mixer" in the settings, let's the sisyfos fader always follow level of the audio mixer, and when the level is zero, the PGM button turns off. If level is above zero, the PGM button will behave as a fadeout button.
 
-### Build pipeline:
+### Build pipeline
 
-The Current CI in Sisyfos has a multiple purpose:
-
-- Build the docker image
-- Build a Windows self-contained executable
-- Optional build to AWS
-  We aim to have a buildplatform that can handle the needs for different broadcasters and different platforms.
+CI runs on every branch push and pull request. Production CalVer releases and branch test images are published manually from GitHub Actions.
