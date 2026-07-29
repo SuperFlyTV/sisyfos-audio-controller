@@ -64,10 +64,10 @@ Routing setups can be stored in STORAGE. So it´s possible to have different Rou
 
 Images are published to GitHub Container Registry (`ghcr.io/<owner>/sisyfos-audio-controller`).
 
-**Production** — CalVer releases (e.g. `26.07.0`). Pull a specific version or `latest`:
+**Production** — CalVer releases (e.g. `v26.07.0`). Pull a specific version or `latest`:
 
 ```
-docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:26.07.0
+docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:v26.07.0
 docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:latest
 docker volume create sisyfos-vol
 docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage -p 1176:1176 -p 5255:5255 --restart always ghcr.io/sofie-automation/sisyfos-audio-controller:latest
@@ -85,7 +85,7 @@ docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:feature-eav-344-ab
 
 - **CI** runs on every push and pull request (all branches): test, validate dependencies, prebuild.
 - **Production release:** Actions → Prod Node CI → Run workflow. CI assigns the next CalVer (`YY.MM.N`), updates `CHANGELOG.md`, creates a git tag, GitHub Release, and GHCR image.
-- **Test image:** Actions → Dev Node CI → Run workflow → enter branch name. Same branch + commit always produces the same image tag.
+- **Test image:** Actions → Dev Node CI → Run workflow (select branch). Same branch + commit always produces the same image tag.
 
 Desktop installers are attached to [GitHub Releases](https://github.com/Sofie-Automation/sisyfos-audio-controller/releases).
 

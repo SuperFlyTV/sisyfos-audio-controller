@@ -343,7 +343,7 @@ jobs:
                       ## Docker
 
                       ```
-                      docker pull ghcr.io/${{ github.repository }}:${{ needs.calver-release.outputs.version }}
+                      docker pull ghcr.io/${{ github.repository }}:${{ needs.calver-release.outputs.tag }}
                       ```
 
                       ${{ needs.calver-release.outputs.changelog }}
@@ -372,7 +372,7 @@ jobs:
               with:
                   images: ghcr.io/${{ github.repository }}
                   tags: |
-                      type=raw,value=${{ needs.calver-release.outputs.version }}
+                      type=raw,value=${{ needs.calver-release.outputs.tag }}
                       type=raw,value=latest
 
             - name: Set up Docker Buildx
