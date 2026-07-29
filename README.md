@@ -64,10 +64,10 @@ Routing setups can be stored in STORAGE. So it´s possible to have different Rou
 
 Images are published to GitHub Container Registry (`ghcr.io/<owner>/sisyfos-audio-controller`).
 
-**Production** — CalVer releases (e.g. `26.07.0`). Pull a specific version or `latest`:
+**Production** — CalVer releases (e.g. `v26.07.0`). Pull a specific version or `latest`:
 
 ```
-docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:26.07.0
+docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:v26.07.0
 docker pull ghcr.io/sofie-automation/sisyfos-audio-controller:latest
 docker volume create sisyfos-vol
 docker run --mount source=sisyfos-vol,target=/opt/sisyfos-audio-controller/storage -p 1176:1176 -p 5255:5255 --restart always ghcr.io/sofie-automation/sisyfos-audio-controller:latest
