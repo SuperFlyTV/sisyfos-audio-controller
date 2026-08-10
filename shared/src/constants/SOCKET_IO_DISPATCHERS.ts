@@ -1,11 +1,10 @@
-// Dispatch constants:
-
 // Fader Channels:
 export const SOCKET_SET_FADERLEVEL = 'FaderLevel'
 export const SOCKET_SET_INPUT_GAIN = 'InputGain'
 export const SOCKET_SET_INPUT_SELECTOR = 'InputSelector'
 export const SOCKET_ASSIGN_CH_TO_FADER = 'assignChToFader'
 export const SOCKET_REMOVE_ALL_CH_ASSIGNMENTS = 'removeAllChAssignments'
+export const SOCKET_ASSIGN_ONE_TO_ONE = 'assignOneToOne'
 export const SOCKET_SET_FADER_MONITOR = 'FaderMonitor'
 export const SOCKET_SHOW_IN_MINI_MONITOR = 'showInMiniMonitor'
 export const SOCKET_SET_AUX_LEVEL = 'setAuxLevel'
@@ -21,6 +20,7 @@ export const SOCKET_TOGGLE_AMIX = 'toggleAmix'
 export const SOCKET_TOGGLE_IGNORE = 'toggleIgnore'
 export const SOCKET_NEXT_MIX = 'nextMix'
 export const SOCKET_CLEAR_PST = 'clearPst'
+export const SOCKET_SET_LINK = 'setLink'
 
 // Div:
 export const SOCKET_SAVE_SETTINGS = 'saveSettings'
@@ -29,9 +29,11 @@ export const SOCKET_GET_SNAPSHOT_LIST = 'getSnapshotList'
 export const SOCKET_RETURN_SNAPSHOT_LIST = 'returnSnapshotList'
 export const SOCKET_GET_CCG_LIST = 'getCcgList'
 export const SOCKET_RETURN_CCG_LIST = 'returnCcgList'
+export const SOCKET_SET_CAPABILITY = 'setCapability'
 export const SOCKET_GET_MIXER_PRESET_LIST = 'getMixerPresetList'
 export const SOCKET_RETURN_MIXER_PRESET_LIST = 'returnMixerPresetList'
 export const SOCKET_LOAD_MIXER_PRESET = 'loadMixerPreset'
+export const SOCKET_DELETE_MIXER_PRESET = 'deleteMixerPreset'
 export const SOCKET_LOAD_SNAPSHOT = 'loadSnapshot'
 export const SOCKET_SAVE_SNAPSHOT = 'saveSnapshot'
 export const SOCKET_SAVE_CCG_FILE = 'saveCcgFile'

@@ -1,2 +1,9 @@
-## Important! This repository is not actively maintained
-If you are planning to send a PR or open an issue, we suggest sending it to https://github.com/olzzon/sisyfos-audio-controller which is an actively maintained fork of this codebase. We may merge code from that repository at our discretion.
+## Description
+
+Brief summary of what this PR changes and why.
+
+## Checklist
+
+- [ ] Tests pass locally (`yarn test`)
+- [ ] Lint/format applied (`yarn lint`)
+- [ ] CHANGELOG updated (if user-facing)

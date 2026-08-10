@@ -1,0 +1,92 @@
+diff --git a/dist/modules/command-sender-http.js b/dist/modules/command-sender-http.js
+index 7d93cd7d811d3e26ac2cddcdff700e2b0944100c..397367af4b4fbf9b95fc1a64f2e73124c3ba4595 100644
+--- a/dist/modules/command-sender-http.js
++++ b/dist/modules/command-sender-http.js
+@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.CommandSenderHTTP = void 0;
+ const axios_1 = __importDefault(require("axios"));
+-const querystring_1 = __importDefault(require("querystring"));
++const stringify_query_1 = require("./stringify-query");
+ //
+ class CommandSenderHTTP {
+     constructor(connection, onSuccess, onError) {
+@@ -26,13 +26,13 @@ class CommandSenderHTTP {
+         // If multiple commands - send via POST request
+         // Manipulate commands for being sent in POST request
+         const commandsMap = commands.map(command => {
+-            return querystring_1.default.stringify(command);
++            return stringify_query_1.stringifyQuery(command);
+         });
+         const data = {
+             Function: 'ScriptStartDynamic',
+             Value: commandsMap.join("\n\r")
+         };
+-        const dataString = querystring_1.default.stringify(data);
++        const dataString = stringify_query_1.stringifyQuery(data);
+         return axios_1.default.post(this._connection.apiUrl(), dataString);
+     }
+     /**
+diff --git a/dist/modules/connection-tcp.js b/dist/modules/connection-tcp.js
+index a4410c23915ef5c8bb885a0a8241e21b34b98c37..435c19aaeb2c7aee11183071561a05d38f94c1df 100644
+--- a/dist/modules/connection-tcp.js
++++ b/dist/modules/connection-tcp.js
+@@ -7,7 +7,7 @@ exports.ConnectionTCP = void 0;
+ // Core libraries
+ const net_1 = require("net");
+ // Libraries
+-const querystring_1 = __importDefault(require("querystring"));
++const stringify_query_1 = require("./stringify-query");
+ // Custom Exceptions
+ const api_url_error_1 = __importDefault(require("../exceptions/api-url-error"));
+ /**
+@@ -327,7 +327,7 @@ class ConnectionTCP {
+             const outputSB = ['FUNCTION', cmdFunc];
+             // Turn other command parameters into querystring
+             if (Object.values(command).length) {
+-                const cmdString = querystring_1.default.stringify(command);
++                const cmdString = stringify_query_1.stringifyQuery(command);
+                 outputSB.push(cmdString);
+             }
+             const output = outputSB.join(' ');
+diff --git a/dist/modules/stringify-query.js b/dist/modules/stringify-query.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..68ef57a9a37c83bb437857849e1c619a05c5ed52
+--- /dev/null
++++ b/dist/modules/stringify-query.js
+@@ -0,0 +1,21 @@
++"use strict";
++Object.defineProperty(exports, "__esModule", { value: true });
++exports.stringifyQuery = void 0;
++function stringifyQuery(data) {
++    const params = new URLSearchParams();
++    for (const [key, value] of Object.entries(data)) {
++        if (value == null) {
++            continue;
++        }
++        if (Array.isArray(value)) {
++            for (const item of value) {
++                params.append(key, String(item));
++            }
++            continue;
++        }
++        params.append(key, String(value));
++    }
++    return params.toString();
++}
++exports.stringifyQuery = stringifyQuery;
++exports.default = exports.stringifyQuery;
+diff --git a/package.json b/package.json
+index 0f2894793d71808f78de9e4ff2a69ec568588848..4b2702816c9fa9d5378945cebf5c0eb5d8645b98 100644
+--- a/package.json
++++ b/package.json
+@@ -34,8 +34,7 @@
+         "test": "yarn snyk-test && yarn jest"
+     },
+     "dependencies": {
+-        "axios": "^1.7.3",
+-        "querystring": "^0.2.1"
++        "axios": "^1.7.3"
+     },
+     "devDependencies": {
+         "@snyk/protect": "^1.1292.2",

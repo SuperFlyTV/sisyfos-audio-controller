@@ -2,50 +2,135 @@
 import { store, state } from '../../reducers/store'
 import { ConnectionTCP } from 'node-vmix'
 import { XmlApi } from 'vmix-js-utils'
+import fs from 'fs'
+import path from 'path'
 
 //Utils:
 import {
-    fxParamsList,
-    IMixerProtocol,
+    FxParam,
+    VMixMixerProtocol,
 } from '../../../../shared/src/constants/MixerProtocolInterface'
-import { ChannelActionTypes, ChannelActions } from '../../../../shared/src/actions/channelActions'
 import {
-    storeFaderLevel,
-    storeFaderFx,
-    storeSetMute,
-    storeInputGain,
-    storeSetPfl,
-    storeSetPgm,
-    storeSetVo,
+    ChannelActions,
+    ChannelActionTypes,
+} from '../../../../shared/src/actions/channelActions'
+import {
+    FaderActions,
+    FaderActionTypes,
 } from '../../../../shared/src/actions/faderActions'
-import { storeSetMixerOnline } from '../../../../shared/src/actions/settingsActions'
+import {
+    SettingsActions,
+    SettingsActionTypes,
+} from '../../../../shared/src/actions/settingsActions'
 import { logger } from '../logger'
 import { sendVuLevel } from '../vuServer'
 import { VuType } from '../../../../shared/src/utils/vu-server-types'
 import { dbToFloat } from './LawoRubyConnection'
-import { IChannelReference, IFader } from '../../../../shared/src/reducers/fadersReducer'
-import { Dispatch } from '@reduxjs/toolkit'
+import {
+    ChannelReference,
+    Fader,
+} from '../../../../shared/src/reducers/fadersReducer'
+import { MixerConnection } from '.'
+import { STORAGE_FOLDER } from '../SettingsStorage'
+import { Preset } from './productSpecific/vMixPreset'
+import { VMixPoller } from './productSpecific/VMixPoller'
+import { VMixConnectionWatchdog } from './productSpecific/VMixConnectionWatchdog'
+import { MasterAudioBus } from 'vmix-js-utils/dist/types/audio-bus'
 
-export class VMixMixerConnection {
-    dispatch: Dispatch<ChannelActions> = store.dispatch
-    mixerProtocol: IMixerProtocol
+/** If no XML received within 2 seconds, we reconnect the feedback connection */
+const CONNECTION_WATCHDOG_TIMEOUT_MS = 2000
+/** We usually poll 80 milliseconds after last XML requested(!) - this is so frequent in order to maintain fairly smooth vu-meters, as well as keep the state up to date */
+const DEFAULT_POLL_INTERVAL_MS = 80
+/** We try to limit polling to at least 20 milliseconds since last XML received(!) in order not to flood vMix too much */
+const DEFAULT_MIN_POLL_INTERVAL_MS = 20
+/** We fallback to doing an additional poll in 500 milliseconds if no XML response is received */
+const FALLBACK_POLL_INTERVAL_MS = 500
+
+interface VMixInput {
+    name: string
+    volume: number
+    muted: boolean
+    state?: string
+    meterF1: number
+    meterF2: number
+    number: number
+    gainDb: number
+    solo: boolean
+}
+
+interface VMixInputLocation {
+    // input number in vMix
+    inputNumber: number
+    channelType: number
+}
+
+import {
+    resolveChannelMatrixPreset,
+    buildChannelMixerVolumes,
+} from './vmixChannelMatrix'
+export {
+    resolveChannelMatrixPreset,
+    buildChannelMixerVolumes,
+} from './vmixChannelMatrix'
+
+export class VMixMixerConnection implements MixerConnection {
+    mixerProtocol: VMixMixerProtocol
     mixerIndex: number
-    cmdChannelIndex: number
-    vmixConnection: any
-    vmixVuConnection: ConnectionTCP
-    mixerOnlineTimer: any
+
+    vMixCommandConnection: ConnectionTCP
+    /** We use a separate connection for updates to prevent blocking any commands */
+    vMixFeedbackConnection: ConnectionTCP
+
+    private poller: VMixPoller
+    private watchdog: VMixConnectionWatchdog
 
     audioOn: Record<string, boolean> = {}
     lastLevel: Record<string, number> = {}
 
-    constructor(mixerProtocol: IMixerProtocol, mixerIndex: number) {
-        this.sendOutMessage = this.sendOutMessage.bind(this)
-        this.pingMixerCommand = this.pingMixerCommand.bind(this)
+    lastState: VMixInput[] | undefined
+    private lastMasterState: { volume: number; muted: boolean } | undefined
 
-        store.dispatch(storeSetMixerOnline(this.mixerIndex, false))
+    awaitingFirstXml = true
+
+    constructor(mixerProtocol: VMixMixerProtocol, mixerIndex: number) {
+        this.sendOutMessage = this.sendOutMessage.bind(this)
+        this.xmlElementToInput = this.xmlElementToInput.bind(this)
+        this.updateInputState = this.updateInputState.bind(this)
+
+        store.dispatch({
+            type: SettingsActionTypes.SET_MIXER_ONLINE,
+            mixerIndex: this.mixerIndex,
+            mixerOnline: false,
+        })
 
         this.mixerProtocol = mixerProtocol
         this.mixerIndex = mixerIndex
+
+        this.watchdog = new VMixConnectionWatchdog(
+            () => {
+                logger.warn(
+                    `VMix XML not received in time, closing feedback connection`
+                )
+                this.vMixFeedbackConnection['_socket'].destroy() // this will trigger reconnect
+            },
+            CONNECTION_WATCHDOG_TIMEOUT_MS // If no XML received within this amount, reconnect the feedback connection
+        )
+
+        this.poller = new VMixPoller(
+            () => {
+                this.vMixFeedbackConnection.send('XML')
+            },
+            () => this.vMixFeedbackConnection.connected(),
+            () => {
+                logger.warn(
+                    `VMix XML not received in time, using fallback poll`
+                )
+            },
+            DEFAULT_POLL_INTERVAL_MS,
+            DEFAULT_MIN_POLL_INTERVAL_MS,
+            FALLBACK_POLL_INTERVAL_MS
+        )
+
         //If default store has been recreated multiple mixers are not created
         if (!state.channels[0].chMixerConnection[this.mixerIndex]) {
             state.channels[0].chMixerConnection[this.mixerIndex] = {
@@ -53,12 +138,7 @@ export class VMixMixerConnection {
             }
         }
 
-        this.cmdChannelIndex =
-            this.mixerProtocol.channelTypes[0].fromMixer.CHANNEL_OUT_GAIN[0].mixerMessage
-                .split('/')
-                .findIndex((ch) => ch === '{channel}')
-
-        this.vmixConnection = new ConnectionTCP(
+        this.vMixCommandConnection = new ConnectionTCP(
             state.settings[0].mixers[this.mixerIndex].deviceIp,
             {
                 port: parseInt(
@@ -67,7 +147,7 @@ export class VMixMixerConnection {
                 debug: true,
             }
         )
-        this.vmixVuConnection = new ConnectionTCP(
+        this.vMixFeedbackConnection = new ConnectionTCP(
             state.settings[0].mixers[this.mixerIndex].deviceIp,
             {
                 port: parseInt(
@@ -78,44 +158,49 @@ export class VMixMixerConnection {
         this.setupMixerConnection()
     }
 
-    mixerOnline(onLineState: boolean) {
-        store.dispatch(storeSetMixerOnline(this.mixerIndex, onLineState))
+    private setMixerOnlineState(onLineState: boolean) {
+        store.dispatch({
+            type: SettingsActionTypes.SET_MIXER_ONLINE,
+            mixerIndex: this.mixerIndex,
+            mixerOnline: onLineState,
+        })
+
         global.mainThreadHandler.updateMixerOnline(this.mixerIndex, onLineState)
     }
 
     private getAssignedFaderIndex(channelIndex: number) {
-        return state.faders[0].fader.findIndex(
-            (fader: IFader) => fader.assignedChannels?.some((assigned: IChannelReference) => {
-                return (assigned.mixerIndex === this.mixerIndex && assigned.channelIndex === channelIndex)
+        return state.faders[0].fader.findIndex((fader: Fader) =>
+            fader.assignedChannels?.some((assigned: ChannelReference) => {
+                return (
+                    assigned.mixerIndex === this.mixerIndex &&
+                    assigned.channelIndex === channelIndex
+                )
             })
         )
     }
 
-    setupMixerConnection() {
-        this.vmixConnection._socket
-            .on('connect', () => {
-                logger.info('Receiving state of desk')
-                this.initialCommands()
+    private onReceivedFirstState() {
+        this.setMixerOnlineState(true)
+        global.mainThreadHandler.updateFullClientStore()
+        this.awaitingFirstXml = false
+    }
 
-                this.mixerOnline(true)
-                global.mainThreadHandler.updateFullClientStore()
-            })
-            .on('data', (data: any) => {
-                const message = data.toString()
-                // logger.trace(XmlApi.DataParser.parse(message))
-                clearTimeout(this.mixerOnlineTimer)
-                if (!state.settings[0].mixers[this.mixerIndex].mixerOnline) {
-                    this.mixerOnline(true)
-                }
-            })
-            .on('error', (error: any) => {
-                global.mainThreadHandler.updateFullClientStore()
-                logger.error(error)
-            })
-            .on('disconnect', () => {
-                this.mixerOnline(false)
-                logger.info('Lost VMix connection')
-            })
+    private setupMixerConnection() {
+        this.vMixCommandConnection.on('connect', () => {
+            logger.info('VMix command connection established')
+            logger.info('Receiving state of desk')
+            this.sendInitialCommands()
+            this.awaitingFirstXml = true
+            // we don't yet set the mixer as online because we want to do that after receiving the initial XML state
+        })
+        this.vMixCommandConnection.on('error', (error: any) => {
+            global.mainThreadHandler.updateFullClientStore()
+            logger.error(error)
+        })
+        this.vMixCommandConnection.on('close', () => {
+            this.setMixerOnlineState(false)
+            logger.warn('VMix command connection lost')
+        })
 
         logger.info(
             `OSC listening on port ${
@@ -123,354 +208,441 @@ export class VMixMixerConnection {
             }`
         )
 
-        //Ping OSC mixer if mixerProtocol needs it.
-        if (this.mixerProtocol.pingTime > 0) {
-            setInterval(() => {
-                this.pingMixerCommand()
-            }, this.mixerProtocol.pingTime)
-        }
+        this.vMixFeedbackConnection.on('xml', (xml: string) => {
+            if (this.awaitingFirstXml) {
+                this.onReceivedFirstState()
+            }
+            try {
+                this.handleXml(xml)
+            } catch (e) {
+                logger.error(e)
+            }
+            // Restart watchdog and schedule next poll
+            this.watchdog.start()
+            this.poller.onResponseReceived()
+        })
 
-        // use separate connection for updates to prevent blocking any commands
-        this.vmixVuConnection.on('xml', (xml: string) => {
-            const doc = XmlApi.DataParser.parse(xml)
-            const inputs = XmlApi.Inputs.extractInputsFromXML(doc)
-
-            const mappedInputs = inputs.map((input) => {
-                const d: Record<string, any> = {
-                    name: input.childNodes[0].nodeValue,
-                }
-
-                const attrs = [
-                    'volume',
-                    'muted',
-                    'meterF1',
-                    'meterF2',
-                    'number',
-                    'gainDb',
-                    'solo',
-                ]
-                Object.values(input.attributes)
-                    .filter((attr: Attr) => attrs.includes(attr.name))
-                    .forEach((attr: Attr) => {
-                        d[attr.name] = attr.value
-                    })
-
-                d.volume = Math.pow(parseFloat(d.volume || '0') / 100, 0.25)
-                d.meterF1 = (9.555 * Math.log(d.meterF1 || 0)) / Math.log(3)
-                d.meterF2 = (9.555 * Math.log(d.meterF2 || 0)) / Math.log(3)
-                d.muted = d.muted ? d.muted === 'True' : true
-                d.solo = d.solo === 'True'
-                d.gainDb = parseFloat(d.gainDb || '0') / 24
-
-                return d
-            })
-
-            mappedInputs.forEach((input) => {
-                if (
-                    !state.channels[0].chMixerConnection[this.mixerIndex]
-                        .channel[input.number - 1]
-                )
-                    return
-
-                if ('number' in input) {
-                    sendVuLevel(
-                        input.number - 1,
-                        VuType.Channel,
-                        0,
-                        dbToFloat(input.meterF1 + 12)
-                    ) // add +15 to convert from dBFS
-                    sendVuLevel(
-                        input.number - 1,
-                        VuType.Channel,
-                        1,
-                        dbToFloat(input.meterF2 + 12)
-                    ) // add +15 to convert from dBFS
-                }
-
-                // If vMix has more channels than Sisyfos is configured to handle,
-                // then do nothing with those additional channels.
-                if (!this.doesChannelExists(input.number - 1)) {
-                    return
-                }
-
-                const { outputLevel, fadeActive } =
-                    state.channels[0].chMixerConnection[this.mixerIndex]
-                        .channel[input.number - 1]
-                const assignedFaderIndex = this.getAssignedFaderIndex(input.number - 1)
-                const { inputGain, muteOn, pflOn, pgmOn, voOn } =
-                    state.faders[0].fader[assignedFaderIndex]
-                let sendUpdate = false
-                const dispatch = (update: any) => {
-                    store.dispatch(update)
-                    sendUpdate = true
-                }
-
-                if ('muted' in input) {
-                    if (input.muted === false) {
-                        if (
-                            !fadeActive &&
-                            outputLevel > 0 &&
-                            Math.abs(outputLevel - input.volume) > 0.01
-                        ) {
-                            dispatch(
-                                storeFaderLevel(assignedFaderIndex, input.volume)
-                            )
-                            store.dispatch({
-                                type: ChannelActionTypes.SET_OUTPUT_LEVEL,
-                                channel: assignedFaderIndex,
-                                mixerIndex: this.mixerIndex,
-                                level: voOn
-                                    ? input.volume /
-                                      (state.settings[0].voLevel / 100)
-                                    : input.volume,
-                            })
-                        }
-                        if (muteOn) {
-                            dispatch(storeSetMute(assignedFaderIndex, false))
-                        }
-                        if (!fadeActive && !pgmOn && !voOn) {
-                            dispatch(storeSetPgm(assignedFaderIndex, true))
-                            store.dispatch({
-                                type: ChannelActionTypes.SET_OUTPUT_LEVEL,
-                                channel: assignedFaderIndex,
-                                mixerIndex: this.mixerIndex,
-                                level: input.volume,
-                            })
-                        }
-                    } else if (!muteOn) {
-                        if (pgmOn) {
-                            dispatch(storeSetPgm(assignedFaderIndex, false))
-                        }
-                        if (voOn) {
-                            dispatch(storeSetVo(assignedFaderIndex, false))
-                        }
-                    }
-
-                    if (inputGain !== input.gainDb) {
-                        dispatch(storeInputGain(assignedFaderIndex, input.gainDb))
-                    }
-                    if (pflOn !== input.solo) {
-                        dispatch(storeSetPfl(assignedFaderIndex, input.solo))
-                    }
-                }
-
-                if (sendUpdate) {
-                    global.mainThreadHandler.updatePartialStore(
-                        input.number - 1
-                    )
-                }
+        this.vMixFeedbackConnection.on('connect', () => {
+            logger.info('VMix feedback connection established')
+            // deferring it so that the connection is fully ready (it processes events itself AFTER it emits them to subscribers)
+            setImmediate(() => {
+                this.poller.start()
+                this.watchdog.start()
             })
         })
-        this.vmixVuConnection.on('connect', () => {
-            setInterval(() => {
-                this.vmixVuConnection.send('XML')
-            }, 80)
+        this.vMixFeedbackConnection.on('error', (error: any) => {
+            logger.error(error)
+        })
+        this.vMixFeedbackConnection.on('close', () => {
+            this.poller.stop()
+            this.watchdog.stop()
+            logger.warn('VMix feedback connection lost')
         })
     }
 
-    initialCommands() {
-        this.vmixConnection.send('XML')
-        this.vmixConnection.send({ Function: 'SUBSCRIBE TALLY' })
-        return
-        // To prevent network overload, timers will delay the requests.
-        this.mixerProtocol.initializeCommands?.forEach(
-            (item, itemIndex: number) => {
-                setTimeout(() => {
-                    if (item.mixerMessage.includes('{channel}')) {
-                        if (item.type !== undefined && item.type === 'aux') {
-                            state.channels[0].chMixerConnection[
-                                this.mixerIndex
-                            ].channel.forEach((channel: any) => {
-                                channel.auxLevel.forEach(
-                                    (auxLevel: any, auxIndex: number) => {
-                                        if (channel.assignedFader >= 0) {
-                                            if (
-                                                state.faders[0].fader[
-                                                    channel.assignedFader
-                                                ]
-                                            ) {
-                                                setTimeout(() => {
-                                                    this.sendOutRequestAux(
-                                                        item.mixerMessage,
-                                                        auxIndex + 1,
-                                                        state.faders[0].fader[
-                                                            channel
-                                                                .assignedFader
-                                                        ].monitor
-                                                    )
-                                                }, state.faders[0].fader[channel.assignedFader].monitor * 10 + auxIndex * 100)
-                                            }
-                                        }
-                                    }
-                                )
-                            })
-                        } else {
-                            state.channels[0].chMixerConnection[
-                                this.mixerIndex
-                            ].channel.forEach((channel: any, index: any) => {
-                                this.sendOutRequest(
-                                    item.mixerMessage,
-                                    index + 1
-                                )
-                            })
-                        }
-                    } else {
-                        let value = item.value || 0
-                        let type = item.type || 'i'
-                        this.sendOutMessage(item.mixerMessage, 1, value, type)
-                    }
-                }, itemIndex * 100)
-            }
+    private get masterChannelTypeIndex(): number {
+        return this.mixerProtocol.channelTypes.findIndex(
+            (ct) => ct.channelTypeName === 'MASTER'
         )
     }
 
-    pingMixerCommand() {
-        //Ping OSC mixer if mixerProtocol needs it.
-        if (!this.mixerProtocol.pingCommand.length) return
-
-        this.mixerProtocol.pingCommand.map((command) => {
-            let value = command.value || 0
-            let type = command.type || 'i'
-            this.sendOutMessage(command.mixerMessage, 0, value, type)
-        })
-        global.mainThreadHandler.updateFullClientStore()
-        this.mixerOnlineTimer = setTimeout(() => {
-            store.dispatch(storeSetMixerOnline(this.mixerIndex, false))
-        }, this.mixerProtocol.pingTime)
+    private isMasterChannel(channelIndex: number): boolean {
+        const masterIndex = this.masterChannelTypeIndex
+        if (masterIndex === -1) return false
+        return (
+            state.channels[0].chMixerConnection[this.mixerIndex].channel[
+                channelIndex
+            ]?.channelType === masterIndex
+        )
     }
 
-    checkFxCommands(message: any) {
-        Object.keys(fxParamsList).forEach((keyName: string) => {
-            if (!isNaN(parseFloat(keyName))) {
-                return
-            }
-
-            let fxKey = keyName as keyof typeof fxParamsList
-            if (
-                this.mixerProtocol.channelTypes[0].fromMixer[
-                    fxParamsList[fxKey]
-                ] &&
-                this.checkVMixCommand(
-                    message.address,
-                    this.mixerProtocol.channelTypes[0].fromMixer[
-                        fxParamsList[fxKey]
-                    ][0].mixerMessage
-                )
-            ) {
-                let ch = message.address.split('/')[this.cmdChannelIndex]
-                const assignedFaderIndex = this.getAssignedFaderIndex(ch-1)
-                store.dispatch(
-                    storeFaderFx(
-                        fxParamsList[fxKey],
-                        assignedFaderIndex,
-                        message.args[0]
-                    )
-                )
-                global.mainThreadHandler.updatePartialStore(
-                    assignedFaderIndex
-                )
-            }
-
-            logger.trace(fxKey)
-        })
-    }
-
-    checkVMixCommand(message: string, command: string | undefined): boolean {
-        if (!command) return false
-        if (message === command) return true
-        return
-        let messageArray: string[] = message.split('/')
-        let commandArray: string[] = command.split('/')
-        let status: boolean = true
-        if (messageArray.length !== commandArray.length) {
-            return false
-        }
-        commandArray.forEach((commandPart: string, index: number) => {
-            if (commandPart === '{channel}') {
-                if (typeof parseFloat(messageArray[index]) !== 'number') {
-                    status = false
-                }
-            } else if (commandPart === '{argument}') {
-                if (typeof parseFloat(messageArray[index]) !== 'number') {
-                    status = false
-                }
-            } else if (commandPart !== messageArray[index]) {
-                status = false
-            }
-        })
-        return status
-    }
-
-    sendOutMessage(
-        vMixMessage: string,
-        channel: number,
-        value: string | number,
-        type: string
-    ) {
+    private sendMasterMessage(vMixMessage: string, value?: string | number) {
         if (state.settings[0].mixers[this.mixerIndex].mixerOnline) {
-            logger.trace(`send${vMixMessage} Input=1&Value=${value}`)
-            this.vmixConnection.send({
+            logger.trace(`send master ${vMixMessage} Value=${value}`)
+            this.vMixCommandConnection.send({
                 Function: vMixMessage,
-                Input: channel, // todo - should we map these?
                 Value: value,
             })
         }
     }
 
-    sendOutRequest(oscMessage: string, channel: number) {
-        let channelString = this.mixerProtocol.leadingZeros
-            ? ('0' + channel).slice(-2)
-            : channel.toString()
-        let message = oscMessage.replace('{channel}', channelString)
-        if (message != 'none') {
-            this.vmixConnection.send({
-                address: message,
-            })
+    private handleXml(xml: string) {
+        const doc = XmlApi.DataParser.parse(xml)
+        const inputs = XmlApi.Inputs.extractInputsFromXML(doc)
+
+        const mappedInputs: Array<VMixInput> = inputs.flatMap(
+            this.xmlElementToInput
+        )
+
+        mappedInputs.forEach(this.updateInputState)
+
+        this.lastState = mappedInputs
+
+        try {
+            const master = XmlApi.AudioBusses.master(doc)
+            this.handleMasterState(master)
+        } catch (_e) {
+            // master bus not present in this XML - ignore
         }
     }
 
-    sendOutRequestAux(oscMessage: string, channel: number, auxSend: number) {
-        let channelString = this.mixerProtocol.leadingZeros
-            ? ('0' + channel).slice(-2)
-            : channel.toString()
-        let message = oscMessage.replace('{channel}', channelString)
-        let auxSendNumber = this.mixerProtocol.leadingZeros
-            ? ('0' + String(auxSend)).slice(-2)
-            : String(auxSend)
-        message = message.replace('{argument}', auxSendNumber)
-        logger.trace(`Initial Aux Message : ${message}`)
-        if (message != 'none') {
-            this.vmixConnection.send({
-                address: message,
+    private handleMasterState(master: MasterAudioBus) {
+        if (!master) return
+
+        const volume = Math.pow(master.volume / 100, 0.25)
+        const muted = master.muted
+        const meterF1 =
+            (9.555 * Math.log(master.audioMeter.left || 0)) / Math.log(3)
+        const meterF2 =
+            (9.555 * Math.log(master.audioMeter.right || 0)) / Math.log(3)
+
+        const channels =
+            state.channels[0].chMixerConnection[this.mixerIndex].channel
+        for (
+            let channelIndex = 0;
+            channelIndex < channels.length;
+            channelIndex++
+        ) {
+            if (
+                !channels[channelIndex] ||
+                channels[channelIndex].channelType !==
+                    this.masterChannelTypeIndex
+            )
+                continue
+
+            const assignedFaderIndex = this.getAssignedFaderIndex(channelIndex)
+            if (
+                assignedFaderIndex === -1 ||
+                !state.faders[0].fader[assignedFaderIndex]
+            )
+                continue
+
+            const { outputLevel, fadeActive } = channels[channelIndex]
+            const { muteOn, pgmOn, voOn } =
+                state.faders[0].fader[assignedFaderIndex]
+            let sendUpdate = false
+
+            const dispatchAndSetUpdateState = (
+                update: FaderActions | ChannelActions
+            ) => {
+                store.dispatch(update)
+                sendUpdate = true
+            }
+
+            // Send VU levels
+            sendVuLevel(
+                assignedFaderIndex,
+                VuType.Channel,
+                0,
+                dbToFloat(meterF1 + 12)
+            )
+            sendVuLevel(
+                assignedFaderIndex,
+                VuType.Channel,
+                1,
+                dbToFloat(meterF2 + 12)
+            )
+
+            // Volume feedback from vMix
+            if (
+                !muted &&
+                !fadeActive &&
+                outputLevel > 0 &&
+                volume !== this.lastMasterState?.volume &&
+                Math.abs(outputLevel - volume) > 0.01
+            ) {
+                dispatchAndSetUpdateState({
+                    type: FaderActionTypes.SET_FADER_LEVEL,
+                    faderIndex: assignedFaderIndex,
+                    level: volume,
+                })
+                dispatchAndSetUpdateState({
+                    type: ChannelActionTypes.SET_OUTPUT_LEVEL,
+                    channel: assignedFaderIndex,
+                    mixerIndex: this.mixerIndex,
+                    level: volume,
+                })
+            }
+
+            // Mute feedback from vMix
+            if (muted !== this.lastMasterState?.muted && muteOn !== muted) {
+                dispatchAndSetUpdateState({
+                    type: FaderActionTypes.SET_MUTE,
+                    faderIndex: assignedFaderIndex,
+                    muteOn: muted,
+                })
+            }
+
+            if (
+                muted !== this.lastMasterState?.muted &&
+                !muted &&
+                !fadeActive &&
+                !pgmOn &&
+                !voOn
+            ) {
+                dispatchAndSetUpdateState({
+                    type: FaderActionTypes.SET_PGM,
+                    faderIndex: assignedFaderIndex,
+                    pgmOn: true,
+                })
+                dispatchAndSetUpdateState({
+                    type: ChannelActionTypes.SET_OUTPUT_LEVEL,
+                    channel: assignedFaderIndex,
+                    mixerIndex: this.mixerIndex,
+                    level: volume,
+                })
+            }
+
+            if (muted !== this.lastMasterState?.muted && muted) {
+                if (pgmOn) {
+                    dispatchAndSetUpdateState({
+                        type: FaderActionTypes.SET_PGM,
+                        faderIndex: assignedFaderIndex,
+                        pgmOn: false,
+                    })
+                }
+                if (voOn) {
+                    dispatchAndSetUpdateState({
+                        type: FaderActionTypes.SET_VO,
+                        faderIndex: assignedFaderIndex,
+                        voOn: false,
+                    })
+                }
+            }
+
+            if (sendUpdate) {
+                global.mainThreadHandler.updatePartialStore(channelIndex)
+            }
+        }
+
+        this.lastMasterState = { volume, muted }
+    }
+
+    private xmlElementToInput(input: Element) {
+        const d: Record<string, any> = {
+            name: input.childNodes[0].nodeValue,
+        }
+
+        const attrs = [
+            'volume',
+            'muted',
+            'state',
+            'meterF1',
+            'meterF2',
+            'number',
+            'gainDb',
+            'solo',
+        ]
+        Object.values(input.attributes)
+            .filter((attr: Attr) => attrs.includes(attr.name))
+            .forEach((attr: Attr) => {
+                d[attr.name] = attr.value
             })
+
+        d.volume = Math.pow(parseFloat(d.volume || '0') / 100, 0.25)
+        d.meterF1 = (9.555 * Math.log(d.meterF1 || 0)) / Math.log(3)
+        d.meterF2 = (9.555 * Math.log(d.meterF2 || 0)) / Math.log(3)
+        d.muted = d.muted ? d.muted === 'True' : true
+        d.solo = d.solo === 'True'
+        d.gainDb = parseFloat(d.gainDb || '0') / 24
+        d.number = Number(d.number)
+
+        return d
+    }
+
+    private updateInputState(input: VMixInput, channelIndex: number) {
+        const lastInputState = this.lastState?.[channelIndex]
+        if (
+            !state.channels[0].chMixerConnection[this.mixerIndex].channel[
+                channelIndex
+            ]
+        )
+            return
+
+        const assignedFaderIndex = this.getAssignedFaderIndex(channelIndex)
+        if (!state.faders[0].fader[assignedFaderIndex]) {
+            return
+        }
+        if ('number' in input) {
+            this.sendVuLevels(assignedFaderIndex, channelIndex, input)
+        }
+
+        // If vMix has more channels than Sisyfos is configured to handle,
+        // then do nothing with those additional channels.
+        if (!this.doesChannelExists(channelIndex)) {
+            return
+        }
+
+        const { outputLevel, fadeActive } =
+            state.channels[0].chMixerConnection[this.mixerIndex].channel[
+                channelIndex
+            ]
+        const { inputGain, muteOn, pflOn, pgmOn, voOn } =
+            state.faders[0].fader[assignedFaderIndex]
+        let sendUpdate = false
+
+        const dispatchAndSetUpdateState = (
+            update: FaderActions | ChannelActions | SettingsActions
+        ) => {
+            store.dispatch(update)
+            sendUpdate = true
+        }
+
+        if ('muted' in input) {
+            if (input.muted === false) {
+                if (
+                    !fadeActive &&
+                    outputLevel > 0 &&
+                    input.volume !== lastInputState?.volume &&
+                    Math.abs(outputLevel - input.volume) > 0.01
+                ) {
+                    dispatchAndSetUpdateState({
+                        type: FaderActionTypes.SET_FADER_LEVEL,
+                        faderIndex: assignedFaderIndex,
+                        level: input.volume,
+                    })
+                    dispatchAndSetUpdateState({
+                        type: ChannelActionTypes.SET_OUTPUT_LEVEL,
+                        channel: assignedFaderIndex,
+                        mixerIndex: this.mixerIndex,
+                        level: voOn
+                            ? input.volume / (state.settings[0].voLevel / 100)
+                            : input.volume,
+                    })
+                }
+                if (input.muted !== lastInputState?.muted && muteOn) {
+                    dispatchAndSetUpdateState({
+                        type: FaderActionTypes.SET_MUTE,
+                        faderIndex: assignedFaderIndex,
+                        muteOn: false,
+                    })
+                }
+                if (
+                    input.muted !== lastInputState?.muted &&
+                    !fadeActive &&
+                    !pgmOn &&
+                    !voOn
+                ) {
+                    dispatchAndSetUpdateState({
+                        type: FaderActionTypes.SET_PGM,
+                        faderIndex: assignedFaderIndex,
+                        pgmOn: true,
+                    })
+                    dispatchAndSetUpdateState({
+                        type: ChannelActionTypes.SET_OUTPUT_LEVEL,
+                        channel: assignedFaderIndex,
+                        mixerIndex: this.mixerIndex,
+                        level: input.volume,
+                    })
+                }
+            } else if (input.muted !== lastInputState?.muted && !muteOn) {
+                if (pgmOn) {
+                    dispatchAndSetUpdateState({
+                        type: FaderActionTypes.SET_PGM,
+                        faderIndex: assignedFaderIndex,
+                        pgmOn: false,
+                    })
+                }
+                if (voOn) {
+                    dispatchAndSetUpdateState({
+                        type: FaderActionTypes.SET_VO,
+                        faderIndex: assignedFaderIndex,
+                        voOn: false,
+                    })
+                }
+            }
+
+            if (
+                input.gainDb !== lastInputState?.gainDb &&
+                inputGain !== input.gainDb
+            ) {
+                dispatchAndSetUpdateState({
+                    type: FaderActionTypes.SET_INPUT_GAIN,
+                    faderIndex: assignedFaderIndex,
+                    level: input.gainDb,
+                })
+            }
+            if (input.solo !== lastInputState?.solo && pflOn !== input.solo) {
+                dispatchAndSetUpdateState({
+                    type: FaderActionTypes.SET_PFL,
+                    faderIndex: assignedFaderIndex,
+                    pflOn: input.solo,
+                })
+            }
+        }
+
+        if (sendUpdate) {
+            global.mainThreadHandler.updatePartialStore(channelIndex)
         }
     }
 
-    updateOutLevel(channelIndex: number) {
-        let channelType =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].channelType
-        let channelTypeIndex =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].channelTypeIndex
-        const level = Math.round(
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].outputLevel * 100
-        )
-        this.sendOutMessage(
-            this.mixerProtocol.channelTypes[channelType].toMixer
-                .CHANNEL_OUT_GAIN[0].mixerMessage,
-            channelTypeIndex + 1,
-            level,
-            'f'
-        )
+    private sendVuLevels(
+        assignedFaderIndex: number,
+        channelIndex: number,
+        input: VMixInput
+    ) {
+        const isPaused = (input.state || '').toLowerCase() === 'paused'
+
+        if (state.faders[0].fader[assignedFaderIndex].isLinked) {
+            let vuIndex: number = state.faders[0].fader[
+                assignedFaderIndex
+            ].assignedChannels?.findIndex((assigned) => {
+                return (
+                    assigned.mixerIndex === this.mixerIndex &&
+                    assigned.channelIndex === channelIndex
+                )
+            })
+
+            // Primary (vuIndex 0) uses meterF1, secondary (vuIndex 1) uses meterF2.
+            const level = isPaused
+                ? 0
+                : vuIndex === 0
+                  ? dbToFloat(input.meterF1 + 12)
+                  : dbToFloat(input.meterF2 + 12)
+            sendVuLevel(assignedFaderIndex, VuType.Channel, vuIndex, level)
+        } else {
+            sendVuLevel(
+                assignedFaderIndex,
+                VuType.Channel,
+                0,
+                isPaused ? 0 : dbToFloat(input.meterF1 + 12)
+            ) // add +12 to convert from dBFS
+            sendVuLevel(
+                assignedFaderIndex,
+                VuType.Channel,
+                1,
+                isPaused ? 0 : dbToFloat(input.meterF2 + 12)
+            )
+        }
+    }
+
+    private sendInitialCommands() {
+        this.vMixCommandConnection.send('XML')
+    }
+
+    private sendOutMessage(
+        vMixMessage: string,
+        inputNumber: number,
+        value: string | number | undefined
+    ) {
+        if (state.settings[0].mixers[this.mixerIndex].mixerOnline) {
+            logger.trace(
+                `send ${vMixMessage} Input=${inputNumber}&Value=${value}`
+            )
+            this.vMixCommandConnection.send({
+                Function: vMixMessage,
+                Input: inputNumber,
+                Value: value,
+            })
+        }
     }
 
     updatePflState(channelIndex: number) {
-        let { channelType, channelTypeIndex, outputLevel } =
+        // Master output has no PFL/solo
+        if (this.isMasterChannel(channelIndex)) return
+
+        const { inputNumber, channelType } = this.getInputLocation(channelIndex)
+        let { outputLevel } =
             state.channels[0].chMixerConnection[this.mixerIndex].channel[
                 channelIndex
             ]
@@ -483,11 +655,9 @@ export class VMixMixerConnection {
             this.sendOutMessage(
                 this.mixerProtocol.channelTypes[channelType].toMixer.PFL_ON[0]
                     .mixerMessage,
-                channelTypeIndex + 1,
+                inputNumber,
                 this.mixerProtocol.channelTypes[channelType].toMixer.PFL_ON[0]
-                    .value,
-                this.mixerProtocol.channelTypes[channelType].toMixer.PFL_ON[0]
-                    .type
+                    .value
             )
         } else {
             if (outputLevel === 0) {
@@ -497,41 +667,41 @@ export class VMixMixerConnection {
             this.sendOutMessage(
                 this.mixerProtocol.channelTypes[channelType].toMixer.PFL_OFF[0]
                     .mixerMessage,
-                channelTypeIndex + 1,
+                inputNumber,
                 this.mixerProtocol.channelTypes[channelType].toMixer.PFL_OFF[0]
-                    .value,
-                this.mixerProtocol.channelTypes[channelType].toMixer.PFL_OFF[0]
-                    .type
+                    .value
             )
         }
     }
 
     updateMuteState(channelIndex: number, muteOn: boolean) {
-        const { channelType, channelTypeIndex, outputLevel } =
+        if (this.isMasterChannel(channelIndex)) {
+            if (muteOn) {
+                this.sendMasterMessage('MasterAudioOff')
+            } else {
+                this.sendMasterMessage('MasterAudioOn')
+            }
+            return
+        }
+
+        const { inputNumber, channelType } = this.getInputLocation(channelIndex)
+        const { outputLevel } =
             state.channels[0].chMixerConnection[this.mixerIndex].channel[
                 channelIndex
             ]
+
+        // TODO: perhaps use subchannelNumber to mute individually?
 
         if (muteOn === true && outputLevel > 0) {
             let mute =
                 this.mixerProtocol.channelTypes[channelType].toMixer
                     .CHANNEL_MUTE_ON[0]
-            this.sendOutMessage(
-                mute.mixerMessage,
-                channelTypeIndex + 1,
-                mute.value,
-                mute.type
-            )
+            this.sendOutMessage(mute.mixerMessage, inputNumber, mute.value)
         } else if (muteOn === false && outputLevel > 0) {
             let mute =
                 this.mixerProtocol.channelTypes[channelType].toMixer
                     .CHANNEL_MUTE_OFF[0]
-            this.sendOutMessage(
-                mute.mixerMessage,
-                channelTypeIndex + 1,
-                mute.value,
-                mute.type
-            )
+            this.sendOutMessage(mute.mixerMessage, inputNumber, mute.value)
         }
     }
 
@@ -544,15 +714,12 @@ export class VMixMixerConnection {
     }
 
     updateInputGain(channelIndex: number, level: number) {
-        let channelType =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].channelType
-        let channelTypeIndex =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].channelTypeIndex
-        let mixerMessage =
+        // Master output has no input gain trim
+        if (this.isMasterChannel(channelIndex)) return
+
+        const { inputNumber, channelType } = this.getInputLocation(channelIndex)
+
+        const mixerMessage =
             this.mixerProtocol.channelTypes[channelType].toMixer
                 .CHANNEL_INPUT_GAIN[0]
         if (mixerMessage.min !== undefined && mixerMessage.max !== undefined) {
@@ -561,72 +728,178 @@ export class VMixMixerConnection {
         }
         this.sendOutMessage(
             mixerMessage.mixerMessage,
-            channelTypeIndex + 1,
-            Math.round(level),
-            'f'
+            inputNumber,
+            Math.round(level)
         )
     }
+
     updateInputSelector(channelIndex: number, inputSelected: number) {
-        const { channelType, channelTypeIndex } =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ]
-        let { mixerMessage, value } =
+        // Master output has no channel matrix routing
+        if (this.isMasterChannel(channelIndex)) return
+
+        const { inputNumber, channelType } = this.getInputLocation(channelIndex)
+        const selector =
             this.mixerProtocol.channelTypes[channelType].toMixer
                 .CHANNEL_INPUT_SELECTOR[inputSelected - 1]
-
-        this.sendOutMessage(mixerMessage, channelTypeIndex + 1, value, '')
+        if (selector) {
+            const { mixerMessage, value } = selector
+            this.sendOutMessage(mixerMessage, inputNumber, value)
+        } else {
+            const assignedFaderIndex = this.getAssignedFaderIndex(channelIndex)
+            const fader = state.faders[0].fader[assignedFaderIndex]
+            if (
+                fader?.isLinked &&
+                fader.assignedChannels &&
+                fader.assignedChannels.length > 1
+            ) {
+                // Linked pair: same inputSelected on both inputs. Primary gets 'L' preset,
+                // secondary gets 'R' preset. SetVolumeChannelMixer follows inputSelected.
+                const LINKED_PRESETS: Array<'L' | 'R'> = ['L', 'R']
+                const ownChannels = fader.assignedChannels.filter(
+                    (a) => a.mixerIndex === this.mixerIndex
+                )
+                ownChannels.forEach((assigned, i) => {
+                    const inp = assigned.channelIndex + 1
+                    this.hack_rearrangeAudioChannels(
+                        inputSelected,
+                        inp,
+                        LINKED_PRESETS[i]
+                    )
+                })
+            } else {
+                // Unlinked secondary must activate rightInput (it carries the right channel
+                // of the pair); unlinked primary activates leftInput.
+                const isSecondary =
+                    fader?.capabilities?.isLinkableSecondary === true
+                const isLinkable =
+                    fader?.capabilities?.isLinkablePrimary === true ||
+                    fader?.capabilities?.isLinkableSecondary === true
+                this.hack_rearrangeAudioChannels(
+                    inputSelected,
+                    inputNumber,
+                    undefined,
+                    isSecondary,
+                    isLinkable
+                )
+            }
+        }
     }
 
-    updateFx(fxParam: fxParamsList, channelIndex: number, level: number) {
-        let channelType =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].channelType
-        let channelTypeIndex =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].channelTypeIndex
-        let fx =
-            this.mixerProtocol.channelTypes[channelType].toMixer[fxParam][0]
-        if (fx.min !== undefined && fx.max !== undefined) {
-            level = fx.min + (fx.max - fx.min) * level
+    /**
+     * Applies an AudioChannelMatrixPreset and configures SetVolumeChannelMixer levels
+     * for a given vMix input.
+     *
+     * inputSelected encodes the pair: leftInput = bits 8-15, rightInput = bits 16-23.
+     * - Linked primary ('L'):   ch leftInput active, 'L' preset applied (mono to Left bus).
+     * - Linked secondary ('R'): ch rightInput active, 'R' preset applied (mono to Right bus).
+     * - Unlinked linkable:      ch leftInput (primary) or rightInput (secondary) active, 'LR' preset
+     *                           routes that one channel to both buses.
+     * - Non-linkable:           both leftInput and rightInput active, '{N}L' preset routes each
+     *                           to its own bus (stereo — two channels simultaneously).
+     *
+     * Mix-minus prefix variants (e.g. 'EXT1_L', 'EXT1_LR') are used for return feed inputs.
+     */
+    private hack_rearrangeAudioChannels(
+        inputSelected: number,
+        inputNumber: number,
+        linkedPreset?: 'L' | 'R',
+        isSecondary?: boolean,
+        isLinkable?: boolean
+    ) {
+        const leftInput = (inputSelected >> 8) & 0xff
+        const rightInput = (inputSelected >> 16) & 0xff
+
+        const returnFeedNumber = this.getReturnFeedNumber(inputNumber)
+        const prefix =
+            state.settings[0].mixers[this.mixerIndex].channelMatrixPrefix ||
+            this.mixerProtocol.channelMatrixPrefix
+        const lrPresetName = this.mixerProtocol.lrPreset
+
+        const { activeChannels, preset } = resolveChannelMatrixPreset({
+            leftInput,
+            rightInput,
+            linkedPreset,
+            isSecondary,
+            isLinkable,
+            lrPresetName,
+            prefix,
+            returnFeedNumber,
+        })
+
+        const volumes = buildChannelMixerVolumes(activeChannels)
+        for (const [ch, vol] of Object.entries(volumes)) {
+            this.sendOutMessage(`SetVolumeChannelMixer${ch}`, inputNumber, vol)
         }
         this.sendOutMessage(
-            fx.mixerMessage,
-            channelTypeIndex + 1,
-            Math.round(level),
-            'f'
-        ) // todo - is it always rounded?
+            `AudioChannelMatrixApplyPreset`,
+            inputNumber,
+            preset
+        )
+    }
+    /**
+     * Checks if the input should use mix-minus presets by looking for the configured prefix in fader labels.
+     * Returns the number after the prefix (e.g., "EXT 1" returns 1, "RTN 3" returns 3), or 0 if no match.
+     */
+    private getReturnFeedNumber(inputNumber: number): number {
+        const prefix =
+            state.settings[0].mixers[this.mixerIndex].channelMatrixPrefix ||
+            this.mixerProtocol.channelMatrixPrefix
+
+        // If no prefix configured, use standard presets
+        if (!prefix) return 0
+
+        // Find the fader for this input
+        const channelIndex = this.getChannelIndexForInput(inputNumber)
+        if (channelIndex === -1) return 0
+
+        const assignedFaderIndex = this.getAssignedFaderIndex(channelIndex)
+        if (assignedFaderIndex === -1) return 0
+
+        const fader = state.faders[0].fader[assignedFaderIndex]
+        const label = fader.userLabel || fader.label || ''
+
+        // Match prefix + number pattern (e.g., "EXT 1", "RTN 2")
+        const match = label.match(new RegExp(`${prefix}\\s+(\\d+)`, 'i'))
+        return match ? parseInt(match[1]) : 0
+    }
+
+    /**
+     * Finds the channel index that corresponds to a given VMix input number
+     */
+    private getChannelIndexForInput(inputNumber: number): number {
+        if (!this.lastState) return -1
+
+        for (
+            let channelIndex = 0;
+            channelIndex < this.lastState.length;
+            channelIndex++
+        ) {
+            const input = this.lastState[channelIndex]
+            if (input && input.number === inputNumber) {
+                return channelIndex
+            }
+        }
+        return -1
+    }
+
+    updateFx(channelIndex: number, fxParam: FxParam, level: number) {
+        return
     }
 
     updateAuxLevel(channelIndex: number, auxSendIndex: number, level: number) {
-        let channelType =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].channelType
-        let channel =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].channelTypeIndex + 1
-        let auxSendCmd =
-            this.mixerProtocol.channelTypes[channelType].toMixer.AUX_LEVEL[0]
-        let auxSendNumber = this.mixerProtocol.leadingZeros
-            ? ('0' + String(auxSendIndex + 1)).slice(-2)
-            : String(auxSendIndex + 1)
-        let message = auxSendCmd.mixerMessage.replace(
-            '{argument}',
-            auxSendNumber
-        )
-
-        this.sendOutMessage(message, channel, level, 'f')
+        return
     }
 
     updateFadeIOLevel(channelIndex: number, outputLevel: number) {
-        let { channelType, channelTypeIndex } =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ]
+        if (this.isMasterChannel(channelIndex)) {
+            const scaledVolume = Math.round(100 * outputLevel)
+            if (this.lastLevel[channelIndex] === scaledVolume) return
+            this.sendMasterMessage('SetMasterVolume', String(scaledVolume))
+            this.lastLevel[channelIndex] = scaledVolume
+            return
+        }
+
+        const { inputNumber } = this.getInputLocation(channelIndex)
         let { muteOn } = state.faders[0].fader[channelIndex]
         outputLevel = Math.round(100 * outputLevel)
 
@@ -634,82 +907,171 @@ export class VMixMixerConnection {
             return
         }
 
-        this.sendOutMessage(
-            this.mixerProtocol.channelTypes[channelType].toMixer
-                .CHANNEL_OUT_GAIN[0].mixerMessage,
-            channelTypeIndex + 1,
-            String(outputLevel),
-            'f'
-        )
+        this.sendOutMessage('SetVolume', inputNumber, String(outputLevel))
         this.lastLevel[channelIndex] = outputLevel
 
         if (!muteOn && outputLevel > 0 && !this.audioOn[channelIndex]) {
-            this.sendOutMessage('AudioOn', channelTypeIndex + 1, 1, '')
+            this.sendOutMessage('AudioOn', inputNumber, 1)
             this.audioOn[channelIndex] = true
         }
 
         if (outputLevel < 1 && this.audioOn[channelIndex]) {
-            this.sendOutMessage('AudioOff', channelTypeIndex + 1, 1, '')
+            this.sendOutMessage('AudioOff', inputNumber, 1)
             // audio off command is a bit slow...
             setTimeout(() => {
-                console.log('turn off')
-                this.sendOutMessage('SetVolume', channelTypeIndex + 1, 75, '')
+                this.sendOutMessage('SetVolume', inputNumber, 75)
             }, 80)
             // this.sendOutMessage('SetVolume', channelTypeIndex + 1, 75, '')
             this.audioOn[channelIndex] = false
         }
     }
 
+    private getInputLocation(channelIndex: number): VMixInputLocation {
+        const { channelType } =
+            state.channels[0].chMixerConnection[this.mixerIndex].channel[
+                channelIndex
+            ]
+        return {
+            inputNumber: channelIndex + 1,
+            channelType,
+        }
+    }
+
     updateChannelName(channelIndex: number) {
-        // let channelType =
-        //     state.channels[0].chMixerConnection[this.mixerIndex].channel[
-        //         channelIndex
-        //     ].channelType
-        // let channelTypeIndex =
-        //     state.channels[0].chMixerConnection[this.mixerIndex].channel[
-        //         channelIndex
-        //     ].channelTypeIndex
-        // let channelName = state.faders[0].fader[channelIndex].label
-        // this.sendOutMessage(
-        //     this.mixerProtocol.channelTypes[channelType].toMixer.CHANNEL_NAME[0]
-        //         .mixerMessage,
-        //     channelTypeIndex + 1,
-        //     channelName,
-        //     's'
-        // )
         return true
     }
 
     loadMixerPreset(presetName: string) {
-        logger.info(`Loading preset : ${presetName}`)
-        if (this.mixerProtocol.presetFileExtension === 'X32') {
-            let data = JSON.parse(
-                '{}' // ''fs.readFileSync(path.resolve(process.cwd(), 'storage', presetName))
-            )
+        let data: Preset = JSON.parse(
+            fs.readFileSync(path.resolve(STORAGE_FOLDER, presetName), 'utf8')
+        )
 
-            this.vmixConnection.send({
-                address: this.mixerProtocol.loadPresetCommand[0].mixerMessage,
-                args: [
-                    {
-                        type: 's',
-                        value: 'scene',
-                    },
-                    {
-                        type: 'i',
-                        value: parseInt(data.sceneIndex),
-                    },
-                ],
-            })
+        // Zeroth pass: unlink all currently linked faders so that borrowed channels
+        // are returned to their original faders before we re-read assignments.
+        // Without this, getAssignedFaderIndex() for a secondary input returns the
+        // primary fader index (because linking moves the channels there), causing
+        // the secondary loop to corrupt the primary's capabilities on every reload.
+        state.faders[0].fader.forEach((fader, faderIndex) => {
+            if (fader.isLinked && fader.capabilities?.isLinkablePrimary) {
+                global.mainThreadHandler.setLink(faderIndex, false)
+            }
+        })
+        const linkPass: number[] = []
+        for (const entry of data) {
+            for (const inputNumber of entry.inputNumbers) {
+                this.lastState.forEach((input, channelIndex) => {
+                    if (input.number !== inputNumber) return
+                    const assignedFaderIndex =
+                        this.getAssignedFaderIndex(channelIndex)
+                    if (assignedFaderIndex === -1) return
+                    if (entry.resetChannelMatrix) {
+                        // inputSelected encodes leftInput=ch1, rightInput=ch2.
+                        // Linked primary ('L'):   ch1 active.
+                        // Linked secondary ('R'): ch2 active.
+                        // Unlinked linkable:      ch1 (primary) or ch2 (secondary) active, LR preset.
+                        // Non-linkable:           ch1 + ch2 active, {N}L preset.
+                        const inputSelected = (2 << 16) | (1 << 8) // leftInput=1, rightInput=2
+                        const positionInEntry =
+                            entry.inputNumbers.indexOf(inputNumber)
+                        const linkedPreset: 'L' | 'R' | undefined =
+                            entry.isLinked
+                                ? positionInEntry === 0
+                                    ? 'L'
+                                    : 'R'
+                                : undefined
+                        this.hack_rearrangeAudioChannels(
+                            inputSelected,
+                            inputNumber,
+                            linkedPreset,
+                            false,
+                            entry.isLinkablePrimary === true
+                        )
+                        store.dispatch({
+                            type: FaderActionTypes.SET_INPUT_SELECTOR,
+                            faderIndex: assignedFaderIndex,
+                            selected: inputSelected,
+                        })
+                    }
+                    if (entry.resetGain) {
+                        store.dispatch({
+                            type: FaderActionTypes.SET_INPUT_GAIN,
+                            faderIndex: assignedFaderIndex,
+                            level: 0,
+                        })
+                    }
+                    if (entry.isLinked) {
+                        linkPass.push(assignedFaderIndex)
+                    }
+                    if (entry.isLinkablePrimary) {
+                        // Mark this fader as primary. Secondary is always faderIndex+1,
+                        // consistent with the assumption made by setLink.
+                        store.dispatch({
+                            type: FaderActionTypes.SET_CAPABILITY,
+                            faderIndex: assignedFaderIndex,
+                            capability: 'isLinkablePrimary',
+                            enabled: true,
+                        })
+                        store.dispatch({
+                            type: FaderActionTypes.SET_CAPABILITY,
+                            faderIndex: assignedFaderIndex,
+                            capability: 'isLinkableSecondary',
+                            enabled: false,
+                        })
+                        const secondaryFaderIndex = assignedFaderIndex + 1
+                        const totalFaders = state.settings[0].numberOfFaders
+                        if (secondaryFaderIndex < totalFaders) {
+                            store.dispatch({
+                                type: FaderActionTypes.SET_CAPABILITY,
+                                faderIndex: secondaryFaderIndex,
+                                capability: 'isLinkablePrimary',
+                                enabled: false,
+                            })
+                            store.dispatch({
+                                type: FaderActionTypes.SET_CAPABILITY,
+                                faderIndex: secondaryFaderIndex,
+                                capability: 'isLinkableSecondary',
+                                enabled: true,
+                            })
+                        }
+                    }
+                    for (const command of entry?.commands ?? []) {
+                        this.sendOutMessage(
+                            command.name,
+                            inputNumber,
+                            command.value ?? ''
+                        )
+                    }
+                })
+            }
         }
+        // Second pass: setLink after all fader state has been fully applied.
+        // Only call setLink on primaries — the reducer sets both primary and
+        // secondary isLinked when called on the primary. Calling it on a
+        // secondary (no isLinkablePrimary capability) would just set isLinked=false.
+        for (const faderIndex of linkPass) {
+            if (
+                state.faders[0].fader[faderIndex]?.capabilities
+                    ?.isLinkablePrimary
+            ) {
+                global.mainThreadHandler.setLink(faderIndex, true)
+            }
+        }
+        global.mainThreadHandler.updateFullClientStore()
     }
 
-    injectCommand(command: string[]) {
-        return true
-    }
+    injectCommand(command: string[]) {}
 
     doesChannelExists(channelNumber: number): boolean {
         return !!state.channels[0].chMixerConnection[this.mixerIndex].channel[
             channelNumber
         ]
     }
+
+    updateAMixState(channelIndex: number, amixOn: boolean) {}
+
+    updateChannelSetting(
+        channelIndex: number,
+        setting: string,
+        value: string
+    ) {}
 }

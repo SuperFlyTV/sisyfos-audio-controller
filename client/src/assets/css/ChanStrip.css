@@ -153,7 +153,9 @@
     margin-left: 50px;
 }
 .inp-comp-del-group .input-buttons.disabled {
-    visibility: hidden;
+    opacity: 0.2;
+    pointer-events: none;
+    cursor: not-allowed;
 }
 .content > .input-buttons {
     width: 30px;
@@ -161,14 +163,16 @@
     margin-left: 50px;
 }
 .content > .input-buttons.disabled {
-    visibility: hidden;
+    opacity: 0.2;
+    pointer-events: none;
+    cursor: not-allowed;
 }
 
 .input-buttons > .input-select {
     outline: none;
     -moz-outline: none;
     color: white;
-    height: 62px;
+    height: 55px;
     width: 70px;
     border-color: rgb(71, 71, 71);
     background-color: rgb(53, 53, 53);

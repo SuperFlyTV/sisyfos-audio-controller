@@ -14,12 +14,13 @@ import { StuderOnAirMaster } from './mixerProtocols/StuderOnAirEmber'
 import { StuderVistaMaster } from './mixerProtocols/StuderVistaEmber'
 import { VMix } from './mixerProtocols/vMix'
 import { Atem } from './mixerProtocols/atem'
+import { DHDMixer } from './mixerProtocols/DHD'
 
 // Interface:
-import { IMixerProtocolGeneric } from './MixerProtocolInterface'
+import { MixerProtocolGeneric } from './MixerProtocolInterface'
 
 export const MixerProtocolPresets: {
-    [key: string]: IMixerProtocolGeneric
+    [key: string]: MixerProtocolGeneric
 } = Object.assign(
     {
         ardourMaster: ArdourMaster,
@@ -30,6 +31,7 @@ export const MixerProtocolPresets: {
         lawoRelayVrx4: LawoRelayVrx4,
         lawoMC2: LawoMC2,
         lawoRuby: LawoRuby,
+        dhd: DHDMixer,
         dmxis: DMXIS,
         yamahaQlCl: YamahaQLCL,
         sslSystemT: SSLSystemT,

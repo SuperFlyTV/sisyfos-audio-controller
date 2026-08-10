@@ -1,22 +1,42 @@
-import { IStore } from '../../../shared/src/reducers/store'
+import defaultStoreRedux, {
+    ReduxStore,
+} from '../../../shared/src/reducers/store'
+import type { Store } from 'redux'
+
+let activeStore: Store = defaultStoreRedux
+
+export function setActiveSisyfosStore(store?: Store) {
+    activeStore = store ?? defaultStoreRedux
+}
+
+export function getSisyfosReduxState(): ReduxStore {
+    return activeStore.getState() as ReduxStore
+}
 
 export function getChannelLabel(
-    state: IStore,
-    faderIndex: number
+    state: ReduxStore,
+    faderIndex: number,
 ): string | undefined {
-    return state.channels[0].chMixerConnection
+    let label = state.channels[0].chMixerConnection
         .flatMap((conn) =>
             conn.channel.map((ch) => ({
                 assignedFader: ch.assignedFader,
                 label: ch.label,
-            }))
+            })),
         )
         .filter((ch) => ch.label && ch.label !== '')
         .find((ch) => ch.assignedFader === faderIndex)?.label
+    if (
+        state.settings[0].labelControlsIgnoreAutomation &&
+        label?.startsWith(state.settings[0].labelIgnorePrefix)
+    ) {
+        label = label.slice(state.settings[0].labelIgnorePrefix.length)
+    }
+    return label
 }
 
 export function getFaderLabel(faderIndex: number, defaultName = 'CH'): string {
-    const state: IStore = window.reduxState
+    const state = getSisyfosReduxState()
     const automationLabel =
         state.faders[0].fader[faderIndex] &&
         state.faders[0].fader[faderIndex].label !== ''

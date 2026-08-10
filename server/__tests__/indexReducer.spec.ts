@@ -1,5 +1,7 @@
-import indexReducer from '../../shared/src/reducers/indexReducer'
-
+import { FaderActionTypes } from '../../shared/src/actions/faderActions'
+import { ChannelActionTypes } from '../../shared/src/actions/channelActions'
+import { SettingsActionTypes } from '../../shared/src/actions/settingsActions'
+import { createEnhancedReducer } from '../../shared/src/reducers/indexReducer'
 import fs from 'fs'
 const parsedEmptyStoreJSON = fs.readFileSync(
     '__tests__/__mocks__/parsedEmptyStore.json',
@@ -8,13 +10,46 @@ const parsedEmptyStoreJSON = fs.readFileSync(
 
 describe('Test initialize store', () => {
     let parsedInitialStore = JSON.parse(parsedEmptyStoreJSON)
+    const reducer = createEnhancedReducer()
     it('should return the initial state of the whole Store', () => {
         // ** Uncomment to update initial settings state:
-        // let data = indexReducer(undefined, {type: ''})
         // fs.writeFileSync('__tests__/__mocks__/parsedEmptyStore-UPDATE.json', JSON.stringify(data))
 
+        // Call reducer with empty store
+        // Test if it returns the initial state
+        // Using SNAP_RECALL action as this doesn't change the state
         expect(
-            indexReducer(JSON.parse(parsedEmptyStoreJSON), { type: '' })
+            reducer(JSON.parse(parsedEmptyStoreJSON), {
+                type: FaderActionTypes.SNAP_RECALL,
+                snapshotIndex: 0,
+            })
         ).toEqual(parsedInitialStore)
+    })
+
+    it('should not mutate the previous state for nested reducer updates', () => {
+        const previousState = JSON.parse(parsedEmptyStoreJSON)
+        const baselineState = JSON.parse(parsedEmptyStoreJSON)
+
+        reducer(previousState, {
+            type: SettingsActionTypes.SET_MIXER_ONLINE,
+            mixerIndex: 0,
+            mixerOnline: true,
+        })
+        expect(previousState).toEqual(baselineState)
+
+        reducer(previousState, {
+            type: FaderActionTypes.SET_FADER_LEVEL,
+            faderIndex: 0,
+            level: 0.5,
+        })
+        expect(previousState).toEqual(baselineState)
+
+        reducer(previousState, {
+            type: ChannelActionTypes.SET_OUTPUT_LEVEL,
+            mixerIndex: 0,
+            channel: 0,
+            level: 0.5,
+        })
+        expect(previousState).toEqual(baselineState)
     })
 })

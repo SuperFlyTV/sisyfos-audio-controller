@@ -4,30 +4,40 @@ import ClassNames from 'classnames'
 import '../assets/css/ChannelRouteSettings.css'
 import { Store } from 'redux'
 import { connect } from 'react-redux'
-import { storeShowOptions } from '../../../shared/src/actions/settingsActions'
-import { SOCKET_ASSIGN_CH_TO_FADER, SOCKET_REMOVE_ALL_CH_ASSIGNMENTS } from '../../../shared/src/constants/SOCKET_IO_DISPATCHERS'
-import { IchMixerConnection } from '../../../shared/src/reducers/channelsReducer'
-import { IChannelReference, IFader } from '../../../shared/src/reducers/fadersReducer'
+import { SettingsActionTypes } from '../../../shared/src/actions/settingsActions'
+import {
+    SOCKET_ASSIGN_CH_TO_FADER,
+    SOCKET_ASSIGN_ONE_TO_ONE,
+    SOCKET_REMOVE_ALL_CH_ASSIGNMENTS,
+    SOCKET_SET_LINK,
+    SOCKET_SET_CAPABILITY,
+} from '../../../shared/src/constants/SOCKET_IO_DISPATCHERS'
+import { ChMixerConnection } from '../../../shared/src/reducers/channelsReducer'
+import {
+    ChannelReference,
+    Fader,
+} from '../../../shared/src/reducers/fadersReducer'
 import { getFaderLabel } from '../utils/labels'
+import { RootState } from '../../../shared/src/reducers/indexReducer'
 
-interface IChannelSettingsInjectProps {
+interface ChannelSettingsInjectProps {
     label: string
-    chMixerConnections: IchMixerConnection[]
-    fader: IFader[]
+    chMixerConnections: ChMixerConnection[]
+    fader: Fader[]
 }
-
-interface IChannelProps {
-    faderIndex: number
+interface ChannelRouteSettingsState {
+    selectedFaderIndex: number
 }
 
 class ChannelRouteSettings extends React.PureComponent<
-    IChannelProps & IChannelSettingsInjectProps & Store
+    ChannelSettingsInjectProps & Store,
+    ChannelRouteSettingsState
 > {
-    faderIndex: number
-
     constructor(props: any) {
         super(props)
-        this.faderIndex = this.props.faderIndex
+        this.state = {
+            selectedFaderIndex: props.faderIndex,
+        }
     }
 
     handleAssignChannel(mixerIndex: number, channelIndex: number, event: any) {
@@ -35,35 +45,39 @@ class ChannelRouteSettings extends React.PureComponent<
         if (
             window.confirm(
                 'Bind/Unbind Mixer ' +
-                String(mixerIndex + 1) +
-                ' Channel ' +
-                String(channelIndex + 1) +
-                ' from Fader ' +
-                String(this.faderIndex + 1)
+                    String(mixerIndex + 1) +
+                    ' Channel ' +
+                    String(channelIndex + 1) +
+                    ' from Fader ' +
+                    String(this.state.selectedFaderIndex + 1)
             )
         ) {
             // Check if channel already is assigned to another fader and remove that binding prior to bind it to the new fader
             if (event.target.checked) {
-                this.props.fader.forEach((fader: IFader, index: number) => {
-                    if (fader.assignedChannels.some((assignedChan) => {
-                        return assignedChan.mixerIndex === mixerIndex && assignedChan.channelIndex === channelIndex
-                    })) {
+                this.props.fader.forEach((fader: Fader, index: number) => {
+                    if (
+                        fader.assignedChannels?.some((assignedChan) => {
+                            return (
+                                assignedChan.mixerIndex === mixerIndex &&
+                                assignedChan.channelIndex === channelIndex
+                            )
+                        })
+                    ) {
                         window.socketIoClient.emit(SOCKET_ASSIGN_CH_TO_FADER, {
                             mixerIndex: mixerIndex,
                             channel: channelIndex,
                             faderIndex: index,
-                            assigned: false
+                            assigned: false,
                         })
                     }
                 })
             }
 
-
             window.socketIoClient.emit(SOCKET_ASSIGN_CH_TO_FADER, {
                 mixerIndex: mixerIndex,
                 channel: channelIndex,
-                faderIndex: this.faderIndex,
-                assigned: event.target.checked
+                faderIndex: this.state.selectedFaderIndex,
+                assigned: event.target.checked,
             })
         }
     }
@@ -76,76 +90,209 @@ class ChannelRouteSettings extends React.PureComponent<
 
     handleOneToOneRouting() {
         if (window.confirm('Reassign all Faders 1:1 to Channels????')) {
-            window.socketIoClient.emit(SOCKET_REMOVE_ALL_CH_ASSIGNMENTS)
-            this.props.fader.forEach((fader: any, index: number) => {
-                if (this.props.chMixerConnections[0].channel.length > index) {
-                    window.socketIoClient.emit(SOCKET_ASSIGN_CH_TO_FADER, {
-                        mixerIndex: 0,
-                        channel: index,
-                        faderIndex: index,
-                        assigned: true
-                    })
-                }
-            })
+            window.socketIoClient.emit(SOCKET_ASSIGN_ONE_TO_ONE)
         }
     }
 
     handleClose = () => {
-        this.props.dispatch(storeShowOptions(this.faderIndex))
+        this.props.dispatch({
+            type: SettingsActionTypes.TOGGLE_SHOW_OPTION,
+            channel: this.state.selectedFaderIndex,
+        })
     }
 
-    getAssignedToFaderIndex = (channel: IChannelReference): number => {
-        let assignedFaderIndex = -1
-        this.props.fader.forEach((fader: any, index: number) => {
+    handleFaderChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const newFaderIndex = parseInt(event.target.value)
+        this.setState({ selectedFaderIndex: newFaderIndex })
+    }
 
-            if (fader.assignedChannels.some((assignedChan: IChannelReference) => {
-                return assignedChan.channelIndex === channel.channelIndex && assignedChan.mixerIndex === channel.mixerIndex
-            }))
+    renderFaderSelector() {
+        return (
+            <select
+                value={this.state.selectedFaderIndex}
+                title="Select the fader to configure the channel routing for"
+                onChange={this.handleFaderChange}
+                className="channel-route-selector"
+            >
+                {this.props.fader.map((fader, index) => (
+                    <option key={index} value={index}>
+                        {getFaderLabel(index, 'FADER')}
+                    </option>
+                ))}
+            </select>
+        )
+    }
+
+    getAssignedToFaderIndex = (channel: ChannelReference): number => {
+        let assignedFaderIndex = -1
+        this.props.fader.forEach((fader, index: number) => {
+            if (
+                fader.assignedChannels?.some(
+                    (assignedChan: ChannelReference) => {
+                        return (
+                            assignedChan.channelIndex ===
+                                channel.channelIndex &&
+                            assignedChan.mixerIndex === channel.mixerIndex
+                        )
+                    }
+                )
+            )
                 assignedFaderIndex = index
         })
         return assignedFaderIndex
     }
 
+    renderChannels(chMixerConnection: ChMixerConnection, mixerIndex: number) {
+        let previousChannelType: number | null = null
 
-    renderMixer(chMixerConnection: IchMixerConnection, mixerIndex: number) {
+        return chMixerConnection.channel.map((channel, index) => {
+            const assignedFaderIndex = this.getAssignedToFaderIndex({
+                mixerIndex: mixerIndex,
+                channelIndex: index,
+            })
+
+            // Compare with previous channel type before updating it
+            const showChannelType = previousChannelType !== channel.channelType
+            previousChannelType = channel.channelType
+
+            return (
+                <React.Fragment key={index}>
+                    {showChannelType && (
+                        <p className="channel-type-name">
+                            {
+                                window.mixerProtocol.channelTypes[
+                                    channel.channelType
+                                ].channelTypeName
+                            }
+                        </p>
+                    )}
+                    <div
+                        className={ClassNames('channel-route-text', {
+                            checked:
+                                assignedFaderIndex ===
+                                this.state.selectedFaderIndex,
+                        })}
+                    >
+                        {' Channel ' + (index + 1) + ' : '}
+                        <input
+                            title="Bind/Unbind Channel"
+                            type="checkbox"
+                            checked={
+                                assignedFaderIndex ===
+                                this.state.selectedFaderIndex
+                            }
+                            onChange={(event) =>
+                                this.handleAssignChannel(
+                                    mixerIndex,
+                                    index,
+                                    event
+                                )
+                            }
+                        />
+                        {assignedFaderIndex >= 0
+                            ? '   (' +
+                              getFaderLabel(assignedFaderIndex, 'FADER') +
+                              ')'
+                            : ' (not assigned)'}
+                    </div>
+                </React.Fragment>
+            )
+        })
+    }
+
+    handleSetCapability(
+        capability: 'isLinkablePrimary' | 'isLinkableSecondary',
+        enabled: boolean
+    ) {
+        const faderIndex = this.state.selectedFaderIndex
+        const fader = this.props.fader[faderIndex]
+        // If disabling primary while currently linked, unlink first
+        if (capability === 'isLinkablePrimary' && !enabled && fader?.isLinked) {
+            window.socketIoClient.emit(SOCKET_SET_LINK, {
+                faderIndex,
+                linkOn: false,
+            })
+        }
+        window.socketIoClient.emit(SOCKET_SET_CAPABILITY, {
+            faderIndex,
+            capability,
+            enabled,
+        })
+        // Capabilities are mutually exclusive
+        if (enabled) {
+            const other =
+                capability === 'isLinkablePrimary'
+                    ? 'isLinkableSecondary'
+                    : 'isLinkablePrimary'
+            window.socketIoClient.emit(SOCKET_SET_CAPABILITY, {
+                faderIndex,
+                capability: other,
+                enabled: false,
+            })
+        }
+    }
+
+    renderLinkability() {
+        const fader = this.props.fader[this.state.selectedFaderIndex]
+        if (!fader) return null
+        const isPrimary = !!fader.capabilities?.isLinkablePrimary
+        const isSecondary = !!fader.capabilities?.isLinkableSecondary
+        return (
+            <div className="channel-route-linkability">
+                <p className="channel-route-mixer-name">LINKABILITY</p>
+                <label className="channel-route-text">
+                    <input
+                        type="checkbox"
+                        checked={isPrimary}
+                        onChange={(e) =>
+                            this.handleSetCapability(
+                                'isLinkablePrimary',
+                                e.target.checked
+                            )
+                        }
+                    />
+                    {' Primary (controls linked secondary)'}
+                </label>
+                <label className="channel-route-text">
+                    <input
+                        type="checkbox"
+                        checked={isSecondary}
+                        onChange={(e) =>
+                            this.handleSetCapability(
+                                'isLinkableSecondary',
+                                e.target.checked
+                            )
+                        }
+                    />
+                    {' Secondary (follows primary)'}
+                </label>
+                {isPrimary && (
+                    <label className="channel-route-text">
+                        <input
+                            type="checkbox"
+                            checked={!!fader.isLinked}
+                            onChange={(e) =>
+                                window.socketIoClient.emit(SOCKET_SET_LINK, {
+                                    faderIndex: this.state.selectedFaderIndex,
+                                    linkOn: e.target.checked,
+                                })
+                            }
+                        />
+                        {' Linked'}
+                    </label>
+                )}
+            </div>
+        )
+    }
+
+    renderMixer(chMixerConnection: ChMixerConnection, mixerIndex: number) {
         return (
             <div>
                 <p className="channel-route-mixer-name">
                     {' '}
                     {'MIXER ' + (mixerIndex + 1)}
                 </p>
-                {chMixerConnection.channel.map((channel: any, index: number) => {
-                    const assignedFaderIndex = this.getAssignedToFaderIndex({ mixerIndex: mixerIndex, channelIndex: index })
-                    return (
-                        <div
-                            key={index}
-                            className={ClassNames('channel-route-text', {
-                                checked:
-                                    assignedFaderIndex === this.faderIndex,
-                            })}
-                        >
-                            {' Channel ' + (index + 1) + ' : '}
-                            <input
-                                type="checkbox"
-                                checked={
-                                    assignedFaderIndex === this.faderIndex
-                                }
-                                onChange={(event) =>
-                                    this.handleAssignChannel(
-                                        mixerIndex,
-                                        index,
-                                        event
-                                    )
-                                }
-                            />
-                            {assignedFaderIndex >= 0
-                                ? '   (Fader ' +
-                                (assignedFaderIndex + 1) +
-                                ')'
-                                : ' (not assigned)'}
-                        </div>
-                    )
-                })}
+                {this.renderChannels(chMixerConnection, mixerIndex)}
             </div>
         )
     }
@@ -153,7 +300,9 @@ class ChannelRouteSettings extends React.PureComponent<
     render() {
         return (
             <div className="channel-route-body">
-                <h2>{this.props.label}</h2>
+                <div className="channel-route-header">
+                    {this.renderFaderSelector()}
+                </div>
                 <button className="close" onClick={() => this.handleClose()}>
                     X
                 </button>
@@ -170,9 +319,13 @@ class ChannelRouteSettings extends React.PureComponent<
                     ROUTE 1.Mixer 1:1
                 </button>
                 <hr />
+                {this.renderLinkability()}
+                <hr />
                 {this.props.chMixerConnections.map(
-                    (chMixerConnection: IchMixerConnection, mixerIndex: number) =>
-                        this.renderMixer(chMixerConnection, mixerIndex)
+                    (
+                        chMixerConnection: ChMixerConnection,
+                        mixerIndex: number
+                    ) => this.renderMixer(chMixerConnection, mixerIndex)
                 )}
             </div>
         )
@@ -180,9 +333,9 @@ class ChannelRouteSettings extends React.PureComponent<
 }
 
 const mapStateToProps = (
-    state: any,
+    state: RootState,
     props: any
-): IChannelSettingsInjectProps => {
+): ChannelSettingsInjectProps => {
     return {
         label: getFaderLabel(props.faderIndex, 'FADER'),
         chMixerConnections: state.channels[0].chMixerConnection,
@@ -190,6 +343,6 @@ const mapStateToProps = (
     }
 }
 
-export default connect<any, IChannelSettingsInjectProps>(mapStateToProps)(
+export default connect<any, ChannelSettingsInjectProps>(mapStateToProps)(
     ChannelRouteSettings
 ) as any

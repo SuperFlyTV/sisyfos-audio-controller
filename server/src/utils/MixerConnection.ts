@@ -5,10 +5,12 @@ import { remoteConnections } from '../mainClasses'
 //Utils:
 import { MixerProtocolPresets } from '../../../shared/src/constants/MixerProtocolPresets'
 import {
-    IMixerProtocol,
-    IMixerProtocolGeneric,
-    ICasparCGMixerGeometry,
-    fxParamsList,
+    MixerProtocol,
+    MixerProtocolGeneric,
+    CasparCGMixerGeometry,
+    FxParam,
+    MixerConnectionTypes,
+    VMixMixerProtocol,
 } from '../../../shared/src/constants/MixerProtocolInterface'
 import { OscMixerConnection } from './mixerConnections/OscMixerConnection'
 import { VMixMixerConnection } from './mixerConnections/VMixMixerConnection'
@@ -20,28 +22,31 @@ import { LawoRubyMixerConnection } from './mixerConnections/LawoRubyConnection'
 import { StuderMixerConnection } from './mixerConnections/StuderMixerConnection'
 import { StuderVistaMixerConnection } from './mixerConnections/StuderVistaMixerConnection'
 import { CasparCGConnection } from './mixerConnections/CasparCGConnection'
-import { IchMixerConnection } from '../../../shared/src/reducers/channelsReducer'
-import {
-    ChannelActionTypes,
-    ChannelActions,
-} from '../../../shared/src/actions/channelActions'
-import { storeFaderLevel } from '../../../shared/src/actions/faderActions'
+import { ChMixerConnection } from '../../../shared/src/reducers/channelsReducer'
+import { ChannelActionTypes } from '../../../shared/src/actions/channelActions'
+import { FaderActionTypes } from '../../../shared/src/actions/faderActions'
 import { AtemMixerConnection } from './mixerConnections/AtemConnection'
-import { IChannelReference } from '../../../shared/src/reducers/fadersReducer'
-import { Dispatch } from 'redux'
+
+import { ChannelReference } from '../../../shared/src/reducers/fadersReducer'
+import { sendChLevelsToOuputServer } from './outputLevelServer'
+import { MixerConnection } from './mixerConnections'
+import { SecondOutRowButtonType } from '../../../shared/src/reducers/settingsReducer'
+import { DHDMixerConnection } from './mixerConnections/DHDConnection'
+import { LawoMC2Connection } from './mixerConnections/LawoMC2Connection'
 
 export class MixerGenericConnection {
-    dispatch: Dispatch<ChannelActions> = store.dispatch
-    mixerProtocol: IMixerProtocolGeneric[]
-    mixerConnection: any[]
+    mixerProtocol: MixerProtocolGeneric[]
+    mixerConnection: MixerConnection[]
     mixerTimers: {
         chTimer: NodeJS.Timeout[]
         fadeActiveTimer: NodeJS.Timeout[]
     }[]
+    currentOutputLevel: number[]
 
     constructor() {
         this.mixerProtocol = []
         this.mixerConnection = []
+        this.currentOutputLevel = []
         // Get mixer protocol
         state.settings[0].mixers.forEach((none: any, index: number) => {
             this.mixerProtocol.push(
@@ -49,62 +54,102 @@ export class MixerGenericConnection {
                     state.settings[0].mixers[index].mixerProtocol
                 ] || MixerProtocolPresets.sslSystemT
             )
-            this.mixerConnection.push({})
-            if (this.mixerProtocol[index].protocol === 'OSC') {
-                this.mixerConnection[index] = new OscMixerConnection(
-                    this.mixerProtocol[index] as IMixerProtocol,
-                    index
-                )
-            } else if (this.mixerProtocol[index].protocol === 'QLCL') {
-                this.mixerConnection[index] = new QlClMixerConnection(
-                    this.mixerProtocol[index] as IMixerProtocol,
-                    index
-                )
-            } else if (this.mixerProtocol[index].protocol === 'MIDI') {
-                this.mixerConnection[index] = new MidiMixerConnection(
-                    this.mixerProtocol[index] as IMixerProtocol,
-                    index
-                )
-            } else if (this.mixerProtocol[index].protocol === 'CasparCG') {
-                this.mixerConnection[index] = new CasparCGConnection(
-                    this.mixerProtocol[index] as ICasparCGMixerGeometry,
-                    index
-                )
-            } else if (this.mixerProtocol[index].protocol === 'EMBER') {
-                this.mixerConnection[index] = new EmberMixerConnection(
-                    this.mixerProtocol[index] as IMixerProtocol,
-                    index
-                )
-            } else if (this.mixerProtocol[index].protocol === 'LAWORUBY') {
-                this.mixerConnection[index] = new LawoRubyMixerConnection(
-                    this.mixerProtocol[index] as IMixerProtocol,
-                    index
-                )
-            } else if (this.mixerProtocol[index].protocol === 'STUDER') {
-                this.mixerConnection[index] = new StuderMixerConnection(
-                    this.mixerProtocol[index] as IMixerProtocol,
-                    index
-                )
-            } else if (this.mixerProtocol[index].protocol === 'VISTA') {
-                this.mixerConnection[index] = new StuderVistaMixerConnection(
-                    this.mixerProtocol[index] as IMixerProtocol,
-                    index
-                )
-            } else if (this.mixerProtocol[index].protocol === 'SSL') {
-                this.mixerConnection[index] = new SSLMixerConnection(
-                    this.mixerProtocol[index] as IMixerProtocol,
-                    index
-                )
-            } else if (this.mixerProtocol[index].protocol === 'VMIX') {
-                this.mixerConnection[index] = new VMixMixerConnection(
-                    this.mixerProtocol[index] as IMixerProtocol,
-                    index
-                )
-            } else if (this.mixerProtocol[index].protocol === 'ATEM') {
-                this.mixerConnection[index] = new AtemMixerConnection(
-                    this.mixerProtocol[index],
-                    index
-                )
+            switch (this.mixerProtocol[index].protocol) {
+                case MixerConnectionTypes.OSC: {
+                    this.mixerConnection[index] = new OscMixerConnection(
+                        this.mixerProtocol[index] as MixerProtocol,
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.YamahaQlCl: {
+                    this.mixerConnection[index] = new QlClMixerConnection(
+                        this.mixerProtocol[index] as MixerProtocol,
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.GenericMidi: {
+                    this.mixerConnection[index] = new MidiMixerConnection(
+                        this.mixerProtocol[index] as MixerProtocol,
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.CasparCG: {
+                    this.mixerConnection[index] = new CasparCGConnection(
+                        this.mixerProtocol[index] as CasparCGMixerGeometry,
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.EMBER: {
+                    this.mixerConnection[index] = new EmberMixerConnection(
+                        this.mixerProtocol[index] as MixerProtocol,
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.LawoMC2: {
+                    this.mixerConnection[index] = new LawoMC2Connection(
+                        this.mixerProtocol[index] as MixerProtocol,
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.LawoRuby: {
+                    this.mixerConnection[index] = new LawoRubyMixerConnection(
+                        this.mixerProtocol[index] as MixerProtocol,
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.Studer: {
+                    this.mixerConnection[index] = new StuderMixerConnection(
+                        this.mixerProtocol[index] as MixerProtocol,
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.StuderVista: {
+                    this.mixerConnection[index] =
+                        new StuderVistaMixerConnection(
+                            this.mixerProtocol[index] as MixerProtocol,
+                            index
+                        )
+                    break
+                }
+                case MixerConnectionTypes.SSLSystemT: {
+                    this.mixerConnection[index] = new SSLMixerConnection(
+                        this.mixerProtocol[index] as MixerProtocol,
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.vMix: {
+                    this.mixerConnection[index] = new VMixMixerConnection(
+                        this.mixerProtocol[index] as VMixMixerProtocol,
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.Atem: {
+                    this.mixerConnection[index] = new AtemMixerConnection(
+                        this.mixerProtocol[index],
+                        index
+                    )
+                    break
+                }
+                case MixerConnectionTypes.DHD: {
+                    this.mixerConnection[index] = new DHDMixerConnection(
+                        this.mixerProtocol[index],
+                        index
+                    )
+                    break
+                }
+                default: {
+                    logger.error("Mixer protocol doesn't exist")
+                }
             }
         })
 
@@ -116,7 +161,7 @@ export class MixerGenericConnection {
         // Setup timers for fade in & out
         this.mixerTimers = []
         state.channels[0].chMixerConnection.forEach(
-            (chMixerConnection: IchMixerConnection, mixerIndex: number) => {
+            (chMixerConnection: ChMixerConnection, mixerIndex: number) => {
                 this.mixerTimers.push({ chTimer: [], fadeActiveTimer: [] })
                 state.channels[0].chMixerConnection[mixerIndex].channel.forEach(
                     (channel) => {
@@ -139,7 +184,11 @@ export class MixerGenericConnection {
     delayedFadeActiveDisable = (mixerIndex: number, channelIndex: number) => {
         this.mixerTimers[mixerIndex].fadeActiveTimer[channelIndex] = setTimeout(
             () => {
-                this.dispatch({
+                logger.trace(
+                    `Clearing fadeActive on ${mixerIndex} Ch ${channelIndex}`
+                )
+
+                store.dispatch({
                     type: ChannelActionTypes.FADE_ACTIVE,
                     mixerIndex: mixerIndex,
                     channel: channelIndex,
@@ -165,9 +214,11 @@ export class MixerGenericConnection {
             state.faders[0].fader[channel].faderLevel <=
             state.settings[0].autoResetLevel / 100
         ) {
-            store.dispatch(
-                storeFaderLevel(channel, this.mixerProtocol[0].fader.zero)
-            )
+            store.dispatch({
+                type: FaderActionTypes.SET_FADER_LEVEL,
+                faderIndex: channel,
+                level: this.mixerProtocol[0].fader.zero,
+            })
         }
     }
 
@@ -189,15 +240,17 @@ export class MixerGenericConnection {
         fadeTime: number,
         mixerIndexToSkip: number = -1
     ) => {
+        if (!state.faders[0].fader[faderIndex]) return
         if (fadeTime === -1) {
             if (state.faders[0].fader[faderIndex].voOn) {
                 fadeTime = state.settings[0].voFadeTime
             } else {
                 fadeTime = state.settings[0].fadeTime
 
-                // When in manual mode - test if SLOW FADE Button is ON:
+                // Set fadetime if SLOW FADE Button is ON:
                 if (
-                    !state.settings[0].automationMode &&
+                    state.settings[0].secondOutRowButton ===
+                        SecondOutRowButtonType.SLOW_FADE &&
                     state.faders[0].fader[faderIndex].slowFadeOn
                 ) {
                     fadeTime = state.settings[0].voFadeTime
@@ -206,7 +259,7 @@ export class MixerGenericConnection {
         }
 
         state.faders[0].fader[faderIndex].assignedChannels?.forEach(
-            (assignedChannel: IChannelReference) => {
+            (assignedChannel: ChannelReference) => {
                 if (assignedChannel.mixerIndex !== mixerIndexToSkip) {
                     this.fadeInOut(
                         assignedChannel.mixerIndex,
@@ -227,9 +280,10 @@ export class MixerGenericConnection {
     }
 
     updateInputGain = (faderIndex: number) => {
+        if (!state.faders[0].fader[faderIndex]) return
         let level = state.faders[0].fader[faderIndex].inputGain
         state.faders[0].fader[faderIndex].assignedChannels?.forEach(
-            (assignedChannel: IChannelReference) => {
+            (assignedChannel: ChannelReference) => {
                 this.mixerConnection[
                     assignedChannel.mixerIndex
                 ].updateInputGain(assignedChannel.channelIndex, level)
@@ -241,7 +295,7 @@ export class MixerGenericConnection {
         let inputSelected = state.faders[0].fader[faderIndex].inputSelector
         logger.trace(`${faderIndex} ${inputSelected}`)
         state.faders[0].fader[faderIndex].assignedChannels?.forEach(
-            (assignedChannel: IChannelReference) => {
+            (assignedChannel: ChannelReference) => {
                 this.mixerConnection[
                     assignedChannel.mixerIndex
                 ].updateInputSelector(
@@ -252,13 +306,19 @@ export class MixerGenericConnection {
         )
     }
 
-    updatePflState = (channelIndex: number) => {
-        this.mixerConnection[0].updatePflState(channelIndex)
+    updatePflState = (faderIndex: number) => {
+        state.faders[0].fader[faderIndex].assignedChannels?.forEach(
+            (assignedChannel: ChannelReference) => {
+                this.mixerConnection[assignedChannel.mixerIndex].updatePflState(
+                    assignedChannel.channelIndex
+                )
+            }
+        )
     }
 
     updateMuteState = (faderIndex: number, mixerIndexToSkip: number = -1) => {
         state.faders[0].fader[faderIndex].assignedChannels?.forEach(
-            (assignedChannel: IChannelReference) => {
+            (assignedChannel: ChannelReference) => {
                 if (assignedChannel.mixerIndex !== mixerIndexToSkip) {
                     this.mixerConnection[
                         assignedChannel.mixerIndex
@@ -273,7 +333,7 @@ export class MixerGenericConnection {
 
     updateAMixState = (faderIndex: number) => {
         state.faders[0].fader[faderIndex].assignedChannels?.forEach(
-            (assignedChannel: IChannelReference) => {
+            (assignedChannel: ChannelReference) => {
                 this.mixerConnection[
                     assignedChannel.mixerIndex
                 ].updateAMixState(
@@ -295,7 +355,7 @@ export class MixerGenericConnection {
                 100
         }
         state.faders[0].fader[faderIndex].assignedChannels?.forEach(
-            (assignedChannel: IChannelReference) => {
+            (assignedChannel: ChannelReference) => {
                 this.mixerConnection[assignedChannel.mixerIndex].updateNextAux(
                     assignedChannel.channelIndex,
                     level
@@ -304,10 +364,10 @@ export class MixerGenericConnection {
         )
     }
 
-    updateFx = (fxParam: fxParamsList, faderIndex: number) => {
+    updateFx = (fxParam: FxParam, faderIndex: number) => {
         let level: number = state.faders[0].fader[faderIndex][fxParam][0]
         state.faders[0].fader[faderIndex].assignedChannels?.forEach(
-            (assignedChannel: IChannelReference) => {
+            (assignedChannel: ChannelReference) => {
                 this.mixerConnection[assignedChannel.mixerIndex].updateFx(
                     fxParam,
                     assignedChannel.channelIndex,
@@ -342,7 +402,7 @@ export class MixerGenericConnection {
         setting: string,
         value: string
     ) => {
-        if (this.mixerProtocol[0].protocol === 'CasparCG') {
+        if (this.mixerProtocol[0].protocol === MixerConnectionTypes.CasparCG) {
             this.mixerConnection[0].updateChannelSetting(
                 channelIndex,
                 setting,
@@ -357,12 +417,15 @@ export class MixerGenericConnection {
         faderIndex: number,
         fadeTime: number
     ) => {
+        const isOnAir =
+            state.faders[0].fader[faderIndex].pgmOn ||
+            state.faders[0].fader[faderIndex].voOn
+
         if (
-            !state.faders[0].fader[faderIndex].pgmOn &&
-            !state.faders[0].fader[faderIndex].voOn &&
+            !isOnAir &&
             state.channels[0].chMixerConnection[mixerIndex].channel[
                 channelIndex
-            ].outputLevel === 0
+            ]?.outputLevel === 0
         ) {
             return
         }
@@ -376,22 +439,51 @@ export class MixerGenericConnection {
         if (
             state.channels[0].chMixerConnection[mixerIndex].channel[
                 channelIndex
-            ].fadeActive
+            ]?.fadeActive
         ) {
             clearInterval(
                 this.mixerTimers[mixerIndex].fadeActiveTimer[channelIndex]
             )
             this.clearTimer(mixerIndex, channelIndex)
         }
-        this.dispatch({type: ChannelActionTypes.FADE_ACTIVE, mixerIndex: mixerIndex, channel: channelIndex, active: true})
-        if (
-            state.faders[0].fader[faderIndex].pgmOn ||
-            state.faders[0].fader[faderIndex].voOn
-        ) {
+        if (isOnAir && fadeTime === 0) {
+            // If fadeTime is 0 - jump to level and don't use timer
+            this.jumpToLevel(mixerIndex, channelIndex, faderIndex)
+        } else if (isOnAir) {
             this.fadeUp(mixerIndex, channelIndex, fadeTime, faderIndex)
         } else {
             this.fadeDown(mixerIndex, channelIndex, fadeTime)
         }
+        store.dispatch({
+            type: ChannelActionTypes.FADE_ACTIVE,
+            mixerIndex: mixerIndex,
+            channel: channelIndex,
+            active: true,
+        })
+    }
+
+    jumpToLevel = (
+        mixerIndex: number,
+        channelIndex: number,
+        faderIndex: number
+    ) => {
+        let targetVal = state.faders[0].fader[faderIndex].faderLevel
+        if (state.faders[0].fader[faderIndex].voOn) {
+            targetVal = (targetVal * (100 - state.settings[0].voLevel)) / 100
+        }
+        this.mixerConnection[mixerIndex].updateFadeIOLevel(
+            channelIndex,
+            targetVal
+        )
+        store.dispatch({
+            type: ChannelActionTypes.SET_OUTPUT_LEVEL,
+            mixerIndex: mixerIndex,
+            channel: channelIndex,
+            level: targetVal,
+        })
+        this.currentOutputLevel[channelIndex] = targetVal
+        sendChLevelsToOuputServer(mixerIndex, channelIndex, targetVal)
+        this.delayedFadeActiveDisable(mixerIndex, channelIndex)
     }
 
     fadeUp = (
@@ -400,17 +492,49 @@ export class MixerGenericConnection {
         fadeTime: number,
         faderIndex: number
     ) => {
-        const outputLevel =
+        let startLevel =
             state.channels[0].chMixerConnection[mixerIndex].channel[
                 channelIndex
             ].outputLevel
+
+        if (
+            state.channels[0].chMixerConnection[mixerIndex].channel[
+                channelIndex
+            ].fadeActive &&
+            this.currentOutputLevel[channelIndex] !== undefined
+        ) {
+            logger.trace(
+                `Preparing fade on ${mixerIndex} Ch ${channelIndex} level ${startLevel} is overriden by ${this.currentOutputLevel[channelIndex]} because fadeActive`
+            )
+
+            startLevel = this.currentOutputLevel[channelIndex]
+        }
+
         let targetVal = state.faders[0].fader[faderIndex].faderLevel
 
         if (state.faders[0].fader[faderIndex].voOn) {
             targetVal = (targetVal * (100 - state.settings[0].voLevel)) / 100
         }
 
-        this.fade(fadeTime, mixerIndex, channelIndex, outputLevel, targetVal)
+        this.fade(fadeTime, mixerIndex, channelIndex, startLevel, targetVal)
+    }
+
+    fadeDown = (mixerIndex: number, channelIndex: number, fadeTime: number) => {
+        let startLevel =
+            state.channels[0].chMixerConnection[mixerIndex].channel[
+                channelIndex
+            ].outputLevel
+
+        if (
+            state.channels[0].chMixerConnection[mixerIndex].channel[
+                channelIndex
+            ].fadeActive &&
+            this.currentOutputLevel[channelIndex] !== undefined
+        ) {
+            startLevel = this.currentOutputLevel[channelIndex]
+        }
+
+        this.fade(fadeTime, mixerIndex, channelIndex, startLevel, 0)
     }
 
     fade(
@@ -423,6 +547,10 @@ export class MixerGenericConnection {
         const startTimeAsMs = Date.now()
         const updateInterval: number = Math.floor(
             1000 / this.mixerProtocol[mixerIndex].MAX_UPDATES_PER_SECOND
+        )
+
+        logger.trace(
+            `Initiating fade on ${mixerIndex} Ch ${channelIndex} started ${startTimeAsMs}: from ${startLevel} to ${endLevel} at ${startTimeAsMs}`
         )
 
         this.clearTimer(mixerIndex, channelIndex)
@@ -461,70 +589,52 @@ export class MixerGenericConnection {
         const elapsedTimeMS = currentTimeMS - startTimeAsMs
 
         if (elapsedTimeMS >= fadeTime || endLevel === startLevel) {
+            this.currentOutputLevel[channelIndex] = endLevel
+
+            logger.trace(
+                `Finishing fade on ${mixerIndex} Ch ${channelIndex} started ${startTimeAsMs}: from ${startLevel} to ${endLevel}, fadeTime: ${fadeTime}, elapsed: ${elapsedTimeMS}`
+            )
             this.mixerConnection[mixerIndex].updateFadeIOLevel(
                 channelIndex,
                 endLevel
             )
             this.clearTimer(mixerIndex, channelIndex)
-            this.dispatch({
+            store.dispatch({
                 type: ChannelActionTypes.SET_OUTPUT_LEVEL,
                 mixerIndex: mixerIndex,
                 channel: channelIndex,
                 level: endLevel,
             })
+            sendChLevelsToOuputServer(mixerIndex, channelIndex, endLevel)
             this.delayedFadeActiveDisable(mixerIndex, channelIndex)
             return true
         }
 
-        const currentOutputLevel =
-            startLevel +
-            (endLevel - startLevel) *
-                Math.max(0, Math.min(1, elapsedTimeMS / fadeTime))
+        const diff = endLevel - startLevel
+        const progress = Math.max(0, Math.min(1, elapsedTimeMS / fadeTime))
+        const newLevel = startLevel + diff * progress
+
+        this.currentOutputLevel[channelIndex] = newLevel
+
+        logger.trace(
+            `Doing fade on ${mixerIndex} Ch ${channelIndex} started ${startTimeAsMs}: from ${startLevel} to ${endLevel}, level: ${newLevel}, progress: ${progress}, fadeTime: ${fadeTime}, elapsed: ${elapsedTimeMS}`
+        )
 
         this.mixerConnection[mixerIndex].updateFadeIOLevel(
             channelIndex,
-            currentOutputLevel
+            newLevel
         )
 
-        this.dispatch({
+        store.dispatch({
             type: ChannelActionTypes.SET_OUTPUT_LEVEL,
             mixerIndex: mixerIndex,
             channel: channelIndex,
-            level: currentOutputLevel,
+            level: endLevel,
         })
+        sendChLevelsToOuputServer(
+            mixerIndex,
+            channelIndex,
+            this.currentOutputLevel[channelIndex]
+        )
     }
-
-    fadeDown = (mixerIndex: number, channelIndex: number, fadeTime: number) => {
-        const outputLevel =
-            state.channels[0].chMixerConnection[mixerIndex].channel[
-                channelIndex
-            ].outputLevel
-
-        this.fade(fadeTime, mixerIndex, channelIndex, outputLevel, 0)
-    }
-}
-
-export interface MixerConnection {
-    updatePflState: (channelIndex: number) => void
-    updateMuteState: (channelIndex: number, muteOn: boolean) => void
-    updateAMixState: (channelIndex: number, amixOn: boolean) => void
-    updateNextAux: (channelIndex: number, level: number) => void
-    updateFx: (
-        fxParam: fxParamsList,
-        channelIndex: number,
-        level: number
-    ) => void
-    updateAuxLevel: (
-        channelIndex: number,
-        auxSendIndex: number,
-        auxLevel: number
-    ) => void
-    updateChannelName: (channelIndex: number) => void
-    injectCommand: (command: string[]) => void
-    updateChannelSetting: (
-        channelIndex: number,
-        setting: string,
-        value: string
-    ) => void
-    updateFadeIOLevel: (channelIndex: number, level: number) => void
 }
