@@ -5,38 +5,40 @@ import { mixerGenericConnection, remoteConnections } from '../../mainClasses'
 
 //Utils:
 import {
-    fxParamsList,
-    IMixerProtocol,
+    FxParam,
+    MixerProtocol,
 } from '../../../../shared/src/constants/MixerProtocolInterface'
 import {
     ChannelActionTypes,
-    ChannelActions,
 } from '../../../../shared/src/actions/channelActions'
 import {
-    storeFaderLevel,
-    storeSetMute,
-    storeTogglePgm,
+    FaderActionTypes,
 } from '../../../../shared/src/actions/faderActions'
-import { storeSetMixerOnline } from '../../../../shared/src/actions/settingsActions'
+import {
+    SettingsActionTypes,
+} from '../../../../shared/src/actions/settingsActions'
 import { logger } from '../logger'
 import {
-    IChannelReference,
-    IFader,
+    ChannelReference,
+    Fader,
 } from '../../../../shared/src/reducers/fadersReducer'
-import { Dispatch } from '@reduxjs/toolkit'
+import { MixerConnection } from '.'
 
-export class SSLMixerConnection {
-    dispatch: Dispatch<ChannelActions> = store.dispatch
-    mixerProtocol: IMixerProtocol
+export class SSLMixerConnection implements MixerConnection {
+    mixerProtocol: MixerProtocol
     mixerIndex: number
     cmdChannelIndex: number
     SSLConnection: any
     mixerOnlineTimer: any
 
-    constructor(mixerProtocol: IMixerProtocol, mixerIndex: number) {
+    constructor(mixerProtocol: MixerProtocol, mixerIndex: number) {
         this.sendOutLevelMessage = this.sendOutLevelMessage.bind(this)
 
-        store.dispatch(storeSetMixerOnline(this.mixerIndex, false))
+        store.dispatch({
+            type: SettingsActionTypes.SET_MIXER_ONLINE,
+            mixerIndex: this.mixerIndex,
+            mixerOnline: false,
+        })
 
         this.mixerProtocol = mixerProtocol
         this.mixerIndex = mixerIndex
@@ -57,7 +59,7 @@ export class SSLMixerConnection {
         this.setupMixerConnection()
     }
 
-    formatHexWithSpaces(str: string, item: string, every: number) {
+    private formatHexWithSpaces(str: string, item: string, every: number) {
         for (let i = 0; i < str.length; i++) {
             if (!(i % (every + 1))) {
                 str = str.substring(0, i) + item + str.substring(i)
@@ -67,8 +69,8 @@ export class SSLMixerConnection {
     }
 
     private getAssignedFaderIndex(channelIndex: number) {
-        return state.faders[0].fader.findIndex((fader: IFader) =>
-            fader.assignedChannels?.some((assigned: IChannelReference) => {
+        return state.faders[0].fader.findIndex((fader: Fader) =>
+            fader.assignedChannels?.some((assigned: ChannelReference) => {
                 return (
                     assigned.mixerIndex === this.mixerIndex &&
                     assigned.channelIndex === channelIndex
@@ -77,7 +79,7 @@ export class SSLMixerConnection {
         )
     }
 
-    handleReceivedFaderLevelCommand = (buffer: any) => {
+    private handleReceivedFaderLevelCommand = (buffer: any) => {
         try {
             let channelIndex = buffer[6]
             let value = buffer.readUInt16BE(7) / 1024
@@ -94,11 +96,16 @@ export class SSLMixerConnection {
                             100
                 ) {
                     if (thisMixerChannels[channelIndex].outputLevel !== value) {
-                        store.dispatch(
-                            storeFaderLevel(assignedFaderIndex, value)
-                        )
+                        store.dispatch({
+                            type: FaderActionTypes.SET_FADER_LEVEL,
+                            faderIndex: assignedFaderIndex,
+                            level: value,
+                        })
                         if (!state.faders[0].fader[assignedFaderIndex].pgmOn) {
-                            store.dispatch(storeTogglePgm(assignedFaderIndex))
+                            store.dispatch({
+                                type: FaderActionTypes.TOGGLE_PGM,
+                                faderIndex: assignedFaderIndex,
+                            })
                         }
 
                         if (remoteConnections) {
@@ -111,7 +118,7 @@ export class SSLMixerConnection {
                             state.faders[0].fader[
                                 assignedFaderIndex
                             ].assignedChannels?.forEach(
-                                (item: IChannelReference) => {
+                                (item: ChannelReference) => {
                                     if (item.mixerIndex === this.mixerIndex) {
                                         this.updateOutLevel(item.channelIndex)
                                     }
@@ -123,12 +130,16 @@ export class SSLMixerConnection {
                     state.faders[0].fader[assignedFaderIndex].pgmOn ||
                     state.faders[0].fader[assignedFaderIndex].voOn
                 ) {
-                    store.dispatch(storeFaderLevel(assignedFaderIndex, value))
+                    store.dispatch({
+                        type: FaderActionTypes.SET_FADER_LEVEL,
+                        faderIndex: assignedFaderIndex,
+                        level: value,
+                    })
                     state.faders[0].fader[
                         assignedFaderIndex
-                    ].assignedChannels?.forEach((item: IChannelReference) => {
+                    ].assignedChannels?.forEach((item: ChannelReference) => {
                         if (item.mixerIndex === this.mixerIndex) {
-                            this.dispatch({
+                            store.dispatch({
                                 type: ChannelActionTypes.SET_OUTPUT_LEVEL,
                                 mixerIndex: this.mixerIndex,
                                 channel: item.channelIndex,
@@ -152,7 +163,7 @@ export class SSLMixerConnection {
         }
     }
 
-    handleReceivedMuteCommand = (buffer: any) => {
+    private handleReceivedMuteCommand = (buffer: any) => {
         // MUTE ON/OFF COMMAND
         let commandHex = buffer.toString('hex')
         let channelIndex = buffer[6]
@@ -166,7 +177,11 @@ export class SSLMixerConnection {
             )}`
         )
 
-        store.dispatch(storeSetMute(assignedFaderIndex, value))
+        store.dispatch({
+            type: FaderActionTypes.SET_MUTE,
+            faderIndex: assignedFaderIndex,
+            muteOn: value,
+        })
 
         if (remoteConnections) {
             remoteConnections.updateRemoteFaderState(
@@ -176,7 +191,7 @@ export class SSLMixerConnection {
         }
 
         state.faders[0].fader[assignedFaderIndex].assignedChannels?.forEach(
-            (item: IChannelReference) => {
+            (item: ChannelReference) => {
                 if (
                     item.mixerIndex === this.mixerIndex &&
                     item.channelIndex !== channelIndex
@@ -192,12 +207,16 @@ export class SSLMixerConnection {
         global.mainThreadHandler.updatePartialStore(assignedFaderIndex)
     }
 
-    setupMixerConnection() {
+    private setupMixerConnection() {
         // Return command was an acknowledge:
         let lastWasAck = false
 
         this.SSLConnection.on('ready', () => {
-            store.dispatch(storeSetMixerOnline(this.mixerIndex, true))
+            store.dispatch({
+                type: SettingsActionTypes.SET_MIXER_ONLINE,
+                mixerIndex: this.mixerIndex,
+                mixerOnline: true,
+            })
 
             logger.info('Receiving state of desk', {})
             this.mixerProtocol.initializeCommands.forEach((item) => {
@@ -215,7 +234,11 @@ export class SSLMixerConnection {
         })
             .on('data', (data: any) => {
                 clearTimeout(this.mixerOnlineTimer)
-                store.dispatch(storeSetMixerOnline(this.mixerIndex, true))
+                store.dispatch({
+                    type: SettingsActionTypes.SET_MIXER_ONLINE,
+                    mixerIndex: this.mixerIndex,
+                    mixerOnline: true,
+                })
 
                 let buffers = []
                 let lastIndex = 0
@@ -272,23 +295,21 @@ export class SSLMixerConnection {
         }, this.mixerProtocol.pingTime)
     }
 
-    pingMixerCommand() {
+    private pingMixerCommand() {
         //Ping OSC mixer if mixerProtocol needs it.
         this.mixerProtocol.pingCommand.forEach((command) => {
             this.sendOutPingRequest()
         })
         this.mixerOnlineTimer = setTimeout(() => {
-            store.dispatch(storeSetMixerOnline(this.mixerIndex, false))
+            store.dispatch({
+                type: SettingsActionTypes.SET_MIXER_ONLINE,
+                mixerIndex: this.mixerIndex,
+                mixerOnline: false,
+            })
         }, this.mixerProtocol.pingTime)
     }
 
-    checkSSLCommand(message: string, command: string) {
-        if (!message) return false
-        if (message.slice(0, command.length) === command) return true
-        return false
-    }
-
-    calculate_checksum8(hexValues: string) {
+    private calculate_checksum8(hexValues: string) {
         // convert input value to upper case
         hexValues = hexValues.toUpperCase()
 
@@ -318,7 +339,7 @@ export class SSLMixerConnection {
         )
     }
 
-    sendOutLevelMessage(
+    private sendOutLevelMessage(
         sslMessage: string,
         channelIndex: number,
         value: string | number
@@ -366,7 +387,7 @@ export class SSLMixerConnection {
         this.SSLConnection.write(buf)
     }
 
-    sendOutRequest(sslMessage: string, channelIndex: number) {
+    private sendOutRequest(sslMessage: string, channelIndex: number) {
         //let sslMessage = 'f1 06 00 80 00 00 {channel} {level}'
         let channelByte = new Uint8Array([
             (channelIndex & 0x0000ff00) >> 8,
@@ -391,7 +412,7 @@ export class SSLMixerConnection {
         this.SSLConnection.write(buf)
     }
 
-    sendOutPingRequest() {
+    private sendOutPingRequest() {
         let sslMessage = 'f1 02 00 07 00'
         sslMessage =
             sslMessage + ' ' + this.calculate_checksum8(sslMessage.slice(9))
@@ -406,7 +427,7 @@ export class SSLMixerConnection {
         this.SSLConnection.write(buf)
     }
 
-    updateOutLevel(channelIndex: number) {
+    private updateOutLevel(channelIndex: number) {
         let channelType =
             state.channels[0].chMixerConnection[this.mixerIndex].channel[
                 channelIndex
@@ -418,7 +439,7 @@ export class SSLMixerConnection {
         const faderIndex = this.getAssignedFaderIndex(channelIndex)
 
         if (state.faders[0].fader[faderIndex].pgmOn) {
-            this.dispatch({
+            store.dispatch({
                 type: ChannelActionTypes.SET_OUTPUT_LEVEL,
                 mixerIndex: this.mixerIndex,
                 channel: channelIndex,
@@ -515,7 +536,7 @@ export class SSLMixerConnection {
     updateInputSelector(channelIndex: number, inputSelected: number) {
         return true
     }
-    updateFx(fxParam: fxParamsList, channelIndex: number, level: number) {
+    updateFx(channelIndex: number, fxParam: FxParam, level: number) {
         return true
     }
     updateAuxLevel(channelIndex: number, auxSendIndex: number, level: number) {
@@ -528,7 +549,13 @@ export class SSLMixerConnection {
 
     loadMixerPreset(presetName: string) {}
 
-    injectCommand(command: string[]) {
-        return true
-    }
+    injectCommand(command: string[]) {}
+
+    updateAMixState(channelIndex: number, amixOn: boolean) {}
+
+    updateChannelSetting(
+        channelIndex: number,
+        setting: string,
+        value: string
+    ) {}
 }

@@ -3,22 +3,21 @@ import React from 'react'
 import '../assets/css/RoutingStorage.css'
 import { Store } from 'redux'
 import { connect } from 'react-redux'
-import { TOGGLE_SHOW_STORAGE } from '../../../shared/src/actions/settingsActions'
+import { SettingsActionTypes } from '../../../shared/src/actions/settingsActions'
 import {
     SOCKET_GET_SNAPSHOT_LIST,
     SOCKET_LOAD_SNAPSHOT,
     SOCKET_SAVE_SNAPSHOT,
     SOCKET_GET_CCG_LIST,
     SOCKET_SAVE_CCG_FILE,
-    SOCKET_GET_MIXER_PRESET_LIST,
-    SOCKET_LOAD_MIXER_PRESET,
 } from '../../../shared/src/constants/SOCKET_IO_DISPATCHERS'
+import MixerPresetStorage from './MixerPresetStorage'
 
-interface IStorageProps {
+interface StorageProps {
     load: any
     save: any
 }
-class Storage extends React.PureComponent<IStorageProps & Store> {
+class Storage extends React.PureComponent<StorageProps & Store> {
     fileList: string[] = []
     loadSnapshot: any
     saveSnapshot: any
@@ -31,15 +30,33 @@ class Storage extends React.PureComponent<IStorageProps & Store> {
         //Bindings:
         this.ListSnapshotFiles = this.ListSnapshotFiles.bind(this)
         this.ListCcgFiles = this.ListCcgFiles.bind(this)
-        this.ListPresetFiles = this.ListPresetFiles.bind(this)
-        this.loadMixerPreset = this.loadMixerPreset.bind(this)
         this.loadFile = this.loadFile.bind(this)
         this.saveFile = this.saveFile.bind(this)
     }
 
     handleClose = () => {
         this.props.dispatch({
-            type: TOGGLE_SHOW_STORAGE,
+            type: SettingsActionTypes.TOGGLE_SHOW_STORAGE,
+        })
+    }
+
+    handleShowRoutingOptions() {
+        this.props.dispatch({
+            type: SettingsActionTypes.TOGGLE_SHOW_OPTION,
+            channel: 0, // this.props.faderIndex,
+        })
+        this.props.dispatch({
+            type: SettingsActionTypes.TOGGLE_SHOW_STORAGE,
+        })
+    }
+
+    handleShowMonitorOptions() {
+        this.props.dispatch({
+            type: SettingsActionTypes.TOGGLE_SHOW_MONITOR_OPTIONS,
+            channel: 0, // this.props.faderIndex,
+        })
+        this.props.dispatch({
+            type: SettingsActionTypes.TOGGLE_SHOW_STORAGE,
         })
     }
 
@@ -80,17 +97,6 @@ class Storage extends React.PureComponent<IStorageProps & Store> {
         this.handleClose()
     }
 
-    loadMixerPreset(event: any) {
-        if (window.confirm('Are you sure you will load a full Mixer setup?')) {
-            console.log('Loading Mixer preset')
-            window.socketIoClient.emit(
-                SOCKET_LOAD_MIXER_PRESET,
-                event.target.textContent
-            )
-        }
-        this.handleClose()
-    }
-
     ListSnapshotFiles() {
         window.socketIoClient.emit(SOCKET_GET_SNAPSHOT_LIST)
         const listItems = window.snapshotFileList.map(
@@ -119,24 +125,6 @@ class Storage extends React.PureComponent<IStorageProps & Store> {
         return <ul className="storage-list">{listItems}</ul>
     }
 
-    ListPresetFiles() {
-        window.socketIoClient.emit(SOCKET_GET_MIXER_PRESET_LIST)
-        const listItems = window.mixerPresetList.map(
-            (file: string, index: number) => {
-                return (
-                    <li
-                        key={index}
-                        onClick={this.loadMixerPreset}
-                        className="item"
-                    >
-                        {file}
-                    </li>
-                )
-            }
-        )
-        return <ul className="storage-list">{listItems}</ul>
-    }
-
     render() {
         return (
             <div className="channel-storage-body">
@@ -147,8 +135,20 @@ class Storage extends React.PureComponent<IStorageProps & Store> {
                 <br />
                 {window.location.search.includes('settings=1') ? (
                     <React.Fragment>
+                        <button
+                            className="routing-button"
+                            onClick={() => this.handleShowRoutingOptions()}
+                        >
+                            Channel-Fader Routing
+                        </button>
+                        <button
+                            className="routing-button"
+                            onClick={() => this.handleShowMonitorOptions()}
+                        >
+                            Monitor Routing
+                        </button>
                         <h3>SAVE ROUTING :</h3>
-                        <button onClick={this.saveFile} className="button">
+                        <button onClick={this.saveFile} className="save-button">
                             SAVE
                         </button>
                         <hr />
@@ -156,14 +156,7 @@ class Storage extends React.PureComponent<IStorageProps & Store> {
                         <this.ListSnapshotFiles />
                     </React.Fragment>
                 ) : null}
-                {window.mixerPresetList.length > 0 ? (
-                    <React.Fragment>
-                        <br />
-                        <hr />
-                        <h3>LOAD MIXER PRESET :</h3>
-                        <this.ListPresetFiles />
-                    </React.Fragment>
-                ) : null}
+                <MixerPresetStorage />
                 {window.ccgFileList.length > 0 ? (
                     <React.Fragment>
                         <br />

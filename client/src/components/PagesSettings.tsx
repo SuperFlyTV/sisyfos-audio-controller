@@ -1,220 +1,276 @@
 import React, { ChangeEvent } from 'react'
-import ClassNames from 'classnames'
 
 import '../assets/css/PagesSettings.css'
 import { Store } from 'redux'
 import { connect } from 'react-redux'
-import {
-    storeShowPagesSetup,
-    storeUpdatePagesList,
-} from '../../../shared/src/actions/settingsActions'
-import { IFader } from '../../../shared/src/reducers/fadersReducer'
+import { SettingsActionTypes } from '../../../shared/src/actions/settingsActions'
+import { Fader } from '../../../shared/src/reducers/fadersReducer'
 import Select from 'react-select'
 import {
     SOCKET_GET_PAGES_LIST,
     SOCKET_SET_PAGES_LIST,
 } from '../../../shared/src/constants/SOCKET_IO_DISPATCHERS'
-import { ICustomPages } from '../../../shared/src/reducers/settingsReducer'
-import { getFaderLabel } from '../utils/labels'
+import { CustomPages } from '../../../shared/src/reducers/settingsReducer'
+import { SortableFaderList } from './SortableFaderList'
 
-//Set style for Select dropdown component:
 const selectorColorStyles = {
     control: (styles: any) => ({
         ...styles,
         backgroundColor: '#676767',
         color: 'white',
         border: 0,
-        width: 400,
+        width: '100%',
     }),
-    option: (styles: any) => {
-        return {
-            backgroundColor: '#AAAAAA',
-            color: 'white',
-        }
-    },
+    option: (_styles: any) => ({
+        backgroundColor: '#AAAAAA',
+        color: 'white',
+    }),
     singleValue: (styles: any) => ({ ...styles, color: 'white' }),
 }
-interface IPagesSettingsInjectProps {
-    customPages: ICustomPages[]
-    fader: IFader[]
+
+interface PagesSettingsInjectProps {
+    customPages: CustomPages[]
+    fader: Fader[]
 }
 
 class PagesSettings extends React.PureComponent<
-    IPagesSettingsInjectProps & Store
+    PagesSettingsInjectProps & Store
 > {
-    pageList: { label: string; value: number }[]
-    state = { pageIndex: 0, label: '' }
+    pageList: { id: string; label: string; value: number }[]
+    private scrollContainerRef = React.createRef<HTMLDivElement>()
+    private fileInputRef = React.createRef<HTMLInputElement>()
+    state = { id: '', pageIndex: 0, label: '' }
 
     constructor(props: any) {
         super(props)
-
         this.pageList = this.props.customPages.map(
-            (page: ICustomPages, index: number) => {
-                return { label: page.label, value: index }
-            }
+            (page: CustomPages, index: number) => ({
+                id: page.id,
+                label: page.label,
+                value: index,
+            })
         )
     }
 
     componentDidMount() {
-        this.setState({ label: this.props.customPages[0].label })
+        const { id, label } = this.props.customPages[0]
+        this.setState({ id, label })
     }
 
-    handleSelectPage(event: any) {
-        this.setState({ pageIndex: event.value })
-        this.setState({
-            label: this.props.customPages[event.value].label,
+    handleSelectPage = (event: any) => {
+        const { id, label } = this.props.customPages[event.value]
+        this.setState({ pageIndex: event.value, id, label })
+    }
+
+    handleProperty = (
+        property: 'id' | 'label',
+        event: ChangeEvent<HTMLInputElement>
+    ) => {
+        this.setState({ [property]: event.target.value })
+        this.pageList[this.state.pageIndex][property] = event.target.value
+        const nextPages = this.pagesWithUpdate((page) => {
+            page[property] = event.target.value
         })
-        console.log('PAGE SELECTED', this.state.pageIndex)
+        this.dispatch(nextPages)
     }
 
-    handleAssignFader(fader: number, event: any) {
-        if (event.target.checked === false) {
-            console.log('Unbinding Fader')
-            if (
-                window.confirm(
-                    'Unbind Fader from page ' +
-                        String(fader + 1) +
-                        ' from Page ' +
-                        String(this.state.pageIndex + 1)
-                )
-            ) {
-                let nextPages: ICustomPages[] = [...this.props.customPages]
-                nextPages[this.state.pageIndex].faders.splice(
-                    this.props.customPages[this.state.pageIndex].faders.indexOf(
-                        fader
-                    ),
-                    1
-                )
-                window.storeRedux.dispatch(storeUpdatePagesList(nextPages))
-                window.socketIoClient.emit(SOCKET_SET_PAGES_LIST, nextPages)
+    handleReorder = (newFaders: number[]) => {
+        const nextPages = this.pagesWithUpdate((page) => {
+            page.faders = newFaders
+        })
+        this.dispatch(nextPages)
+    }
+
+    handleAdd = (faderIndex: number) => {
+        const nextPages = this.pagesWithUpdate((page) => {
+            page.faders = [...page.faders, faderIndex]
+        })
+        this.dispatch(nextPages)
+    }
+
+    handleRemove = (faderIndex: number) => {
+        const nextPages = this.pagesWithUpdate((page) => {
+            page.faders = page.faders.filter((f) => f !== faderIndex)
+        })
+        this.dispatch(nextPages)
+    }
+
+    handleSort = () => {
+        const nextPages = this.pagesWithUpdate((page) => {
+            page.faders = [...page.faders].sort((a, b) => a - b)
+        })
+        this.dispatch(nextPages)
+    }
+
+    handleClear = () => {
+        if (!window.confirm('REMOVE ALL FADER ASSIGNMENTS????')) return
+        const nextPages = this.pagesWithUpdate((page) => {
+            page.faders = []
+        })
+        this.dispatch(nextPages)
+    }
+
+    handleDownload = () => {
+        const a = document.createElement('a')
+        a.href = '/api/pages'
+        a.download = 'pages.json'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+    }
+
+    handleUploadClick = () => {
+        this.fileInputRef.current?.click()
+    }
+
+    handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        e.target.value = ''
+        file.text().then((text) => {
+            let parsed: any
+            try {
+                parsed = JSON.parse(text)
+            } catch {
+                window.alert('Could not parse file')
+                return
             }
-        } else {
-            console.log('Binding Channel')
             if (
-                window.confirm(
-                    'Bind Fader ' +
-                        String(fader + 1) +
-                        ' to Page ' +
-                        String(this.state.pageIndex + 1) +
-                        '?'
+                !Array.isArray(parsed) ||
+                !parsed.every(
+                    (p: any) =>
+                        typeof p.id === 'string' &&
+                        typeof p.label === 'string' &&
+                        Array.isArray(p.faders)
                 )
             ) {
-                let nextPages: ICustomPages[] = [...this.props.customPages]
-                nextPages[this.state.pageIndex].faders.push(fader)
-                nextPages[this.state.pageIndex].faders.sort((a, b) => {
-                    return a - b
+                window.alert('Invalid pages format')
+                return
+            }
+            fetch('/api/pages', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: text,
+            })
+                .then((res) => {
+                    if (!res.ok)
+                        window.alert(`Import failed: ${res.statusText}`)
                 })
-                window.storeRedux.dispatch(storeUpdatePagesList(nextPages))
-                window.socketIoClient.emit(SOCKET_SET_PAGES_LIST, nextPages)
-            }
-        }
-    }
-
-    handleLabel = (event: ChangeEvent<HTMLInputElement>) => {
-        this.setState({ label: event.target.value })
-        this.pageList[this.state.pageIndex].label = event.target.value
-        let nextPages: ICustomPages[] = [...this.props.customPages]
-        nextPages[this.state.pageIndex].label = event.target.value
-
-        window.storeRedux.dispatch(storeUpdatePagesList(nextPages))
-        window.socketIoClient.emit(SOCKET_SET_PAGES_LIST, nextPages)
-    }
-
-    handleClearRouting() {
-        if (window.confirm('REMOVE ALL FADER ASSIGNMENTS????')) {
-            let nextPages: ICustomPages[] = [...this.props.customPages]
-            nextPages[this.state.pageIndex].faders = []
-            window.storeRedux.dispatch(storeUpdatePagesList(nextPages))
-            window.socketIoClient.emit(SOCKET_SET_PAGES_LIST, nextPages)
-        }
+                .catch((err) => {
+                    window.alert(`Import error: ${err}`)
+                })
+        })
     }
 
     handleClose = () => {
         window.socketIoClient.emit(SOCKET_GET_PAGES_LIST)
-        this.props.dispatch(storeShowPagesSetup())
+        window.storeRedux.dispatch({
+            type: SettingsActionTypes.TOGGLE_SHOW_PAGES_SETUP,
+        })
     }
 
-    renderFaderList() {
-        return (
-            <div>
-                {this.props.fader.map((fader: IFader, index: number) => {
-                    return (
-                        <div
-                            key={index}
-                            className={ClassNames('pages-settings-tick', {
-                                checked: this.props.customPages[
-                                    this.state.pageIndex
-                                ].faders.includes(index),
-                            })}
-                        >
-                            {' Fader ' + (index + 1) + ' - ' + getFaderLabel(index) + ' : '}
-                            {}
-                            <input
-                                type="checkbox"
-                                checked={this.props.customPages[
-                                    this.state.pageIndex
-                                ].faders.includes(index)}
-                                onChange={(event) =>
-                                    this.handleAssignFader(index, event)
-                                }
-                            />
+    private pagesWithUpdate(
+        updater: (page: CustomPages) => void
+    ): CustomPages[] {
+        const nextPages: CustomPages[] = this.props.customPages.map((p) => ({
+            ...p,
+            faders: [...p.faders],
+        }))
+        updater(nextPages[this.state.pageIndex])
+        return nextPages
+    }
 
-                        </div>
-                    )
-                })}
-            </div>
-        )
+    private dispatch(nextPages: CustomPages[]) {
+        window.storeRedux.dispatch({
+            type: SettingsActionTypes.SET_PAGES_LIST,
+            customPages: nextPages,
+        })
+        window.socketIoClient.emit(SOCKET_SET_PAGES_LIST, nextPages)
     }
 
     render() {
+        const { customPages, fader } = this.props
+        const { pageIndex, id, label } = this.state
+        const currentPage = customPages[pageIndex]
+
         return (
-            <div className="pages-settings-body">
+            <div className="pages-settings-body" ref={this.scrollContainerRef}>
                 <h2>CUSTOM PAGES</h2>
-                <button className="close" onClick={() => this.handleClose()}>
+                <button className="close" onClick={this.handleClose}>
                     X
                 </button>
+                <div className="pages-settings-action-row">
+                    <button
+                        className="pages-settings-sort-btn"
+                        onClick={this.handleDownload}
+                    >
+                        EXPORT ALL PAGES
+                    </button>
+                    <button
+                        className="pages-settings-sort-btn"
+                        onClick={this.handleUploadClick}
+                    >
+                        IMPORT ALL PAGES
+                    </button>
+                </div>
+                <input
+                    ref={this.fileInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    style={{ display: 'none' }}
+                    onChange={this.handleFileChange}
+                />
+
                 <Select
                     styles={selectorColorStyles}
                     value={{
-                        label:
-                            this.props.customPages[this.state.pageIndex]
-                                .label ||
-                            'Page : ' + (this.state.pageIndex + 1),
-                        value: this.state.pageIndex,
+                        label: currentPage.label || `Page : ${pageIndex + 1}`,
+                        value: pageIndex,
                     }}
-                    onChange={(event: any) => this.handleSelectPage(event)}
+                    onChange={this.handleSelectPage}
                     options={this.pageList}
                 />
+
                 <label className="inputfield">
-                    LABEL :
+                    ID :
                     <input
-                        name="label"
                         type="text"
-                        value={this.state.label}
-                        onChange={(event) => this.handleLabel(event)}
+                        value={id}
+                        onChange={(e) => this.handleProperty('id', e)}
                     />
                 </label>
                 <br />
-                {this.renderFaderList()}
-                <button
-                    className="button"
-                    onClick={() => this.handleClearRouting()}
-                >
-                    CLEAR ALL
-                </button>
+                <label className="inputfield">
+                    LABEL :
+                    <input
+                        type="text"
+                        value={label}
+                        onChange={(e) => this.handleProperty('label', e)}
+                    />
+                </label>
+                <br />
+
+                <SortableFaderList
+                    faderIndices={currentPage.faders}
+                    totalFaders={fader.length}
+                    scrollContainerRef={this.scrollContainerRef}
+                    onReorder={this.handleReorder}
+                    onRemove={this.handleRemove}
+                    onAdd={this.handleAdd}
+                    onSort={this.handleSort}
+                    onClear={this.handleClear}
+                />
                 <br />
             </div>
         )
     }
 }
 
-const mapStateToProps = (state: any, props: any): IPagesSettingsInjectProps => {
-    return {
-        customPages: state.settings[0].customPages,
-        fader: state.faders[0].fader,
-    }
-}
+const mapStateToProps = (state: any): PagesSettingsInjectProps => ({
+    customPages: state.settings[0].customPages,
+    fader: state.faders[0].fader,
+})
 
-export default connect<any, IPagesSettingsInjectProps>(mapStateToProps)(
+export default connect<any, PagesSettingsInjectProps>(mapStateToProps)(
     PagesSettings
 ) as any

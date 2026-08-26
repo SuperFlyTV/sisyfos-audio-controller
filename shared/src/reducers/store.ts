@@ -1,14 +1,19 @@
-import { configureStore } from '@reduxjs/toolkit'
-import { IFaders } from './fadersReducer'
-import { IChannels } from './channelsReducer'
-import indexReducer from './indexReducer'
-import { ISettings } from './settingsReducer'
+import { Faders } from './fadersReducer'
+import { Channels } from './channelsReducer'
+import { createEnhancedReducer } from './indexReducer'
+import { Settings } from './settingsReducer'
+import { createStore } from '@reduxjs/toolkit'
 
-export interface IStore {
-  settings: Array<ISettings>
-  channels: Array<IChannels>
-  faders: Array<IFaders>
+export interface ReduxStore {
+  settings: Array<Settings>
+  channels: Array<Channels>
+  faders: Array<Faders>
 }
 
-export default configureStore({reducer: indexReducer})
-export { Store } from 'redux'
+const store = createStore(createEnhancedReducer())
+
+export default store
+
+export type AppDispatch = typeof store.dispatch;
+
+export type { Store } from 'redux'

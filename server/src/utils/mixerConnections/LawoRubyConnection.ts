@@ -4,25 +4,19 @@ import { remoteConnections } from '../../mainClasses'
 
 //Utils:
 import {
-    fxParamsList,
-    IMixerProtocol,
+    FxParam,
+    MixerProtocol,
 } from '../../../../shared/src/constants/MixerProtocolInterface'
-import {
-    SET_INPUT_SELECTOR,
-    storeFaderLevel,
-    storeInputGain,
-    storeChannelDisabled,
-    storeSetAMix,
-    storeCapability,
-    storeShowChannel,
-} from '../../../../shared/src/actions/faderActions'
+import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
 import { logger } from '../logger'
-import { storeSetMixerOnline } from '../../../../shared/src/actions/settingsActions'
-import { ChannelActions, ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
-import { Dispatch } from '@reduxjs/toolkit'
+import { SettingsActionTypes } from '../../../../shared/src/actions/settingsActions'
+import { ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
+import { EmberElement, NumberedTreeNode } from 'emberplus-connection/dist/model'
+import { MixerConnection } from '.'
 
 // TODO - should these be util functions?
-export function floatToDB(f: number): number {
+export function floatToDB(f: number, min = -90): number {
+    const scale = (-min - 60) / 0.0625 // scale for the bottom of the fader
     if (f >= 0.5) {
         return f * 40 - 30 // max dB value: +10.
     } else if (f >= 0.25) {
@@ -30,16 +24,18 @@ export function floatToDB(f: number): number {
     } else if (f >= 0.0625) {
         return f * 160 - 70
     } else if (f > 0.0) {
-        return f * 480 - 90 // min dB value: -90 or -oo
+        return f * scale + min // min dB value: -90 or -oo
     } else {
         return -191
     }
 }
 
-export function dbToFloat(d: number): number {
+export function dbToFloat(d: number, min = -90): number {
     let f: number
+    const scale = (-min - 60) / 0.0625 // scale for the bottom of the fader
+
     if (d < -60) {
-        f = (d + 90) / 480
+        f = (d + -min) / scale
     } else if (d < -30) {
         f = (d + 70) / 160
     } else if (d < -10) {
@@ -52,16 +48,14 @@ export function dbToFloat(d: number): number {
     return Math.max(0, f)
 }
 
-export class LawoRubyMixerConnection {
-    dispatch: Dispatch<ChannelActions> = store.dispatch
-    mixerProtocol: IMixerProtocol
+export class LawoRubyMixerConnection implements MixerConnection {
+    mixerProtocol: MixerProtocol
     mixerIndex: number
     emberConnection: EmberClient
     faders: { [index: number]: string } = {}
 
-    constructor(mixerProtocol: IMixerProtocol, mixerIndex: number) {
+    constructor(mixerProtocol: MixerProtocol, mixerIndex: number) {
         this.sendOutMessage = this.sendOutMessage.bind(this)
-        this.pingMixerCommand = this.pingMixerCommand.bind(this)
 
         this.mixerProtocol = mixerProtocol
         this.mixerIndex = mixerIndex
@@ -72,7 +66,11 @@ export class LawoRubyMixerConnection {
             state.settings[0].mixers[this.mixerIndex].devicePort
         )
 
-        store.dispatch(storeSetMixerOnline(this.mixerIndex, false))
+        store.dispatch({
+            type: SettingsActionTypes.SET_MIXER_ONLINE,
+            mixerIndex: this.mixerIndex,
+            mixerOnline: false,
+        })
 
         this.emberConnection.on('error', (error: any) => {
             if (
@@ -86,12 +84,20 @@ export class LawoRubyMixerConnection {
         })
         this.emberConnection.on('disconnected', () => {
             logger.error('Lost Ember connection')
-            store.dispatch(storeSetMixerOnline(this.mixerIndex, false))
+            store.dispatch({
+                type: SettingsActionTypes.SET_MIXER_ONLINE,
+                mixerIndex: this.mixerIndex,
+                mixerOnline: false,
+            })
             global.mainThreadHandler.updateMixerOnline(this.mixerIndex)
         })
         this.emberConnection.on('connected', () => {
             logger.info('Connected to Ember device')
-            store.dispatch(storeSetMixerOnline(this.mixerIndex, true))
+            store.dispatch({
+                type: SettingsActionTypes.SET_MIXER_ONLINE,
+                mixerIndex: this.mixerIndex,
+                mixerOnline: true,
+            })
             global.mainThreadHandler.updateMixerOnline(this.mixerIndex)
         })
 
@@ -114,17 +120,18 @@ export class LawoRubyMixerConnection {
             })
     }
 
-    async setupMixerConnection() {
+    private async setupMixerConnection() {
         logger.info(
             'Ember connection established - setting up subscription of channels'
         )
 
         // get the node that contains the sources
-        const sourceNode = await this.emberConnection.getElementByPath(
-            'Ruby.Sources'
-        )
+        const sourceNode =
+            await this.emberConnection.getElementByPath('Ruby.Sources')
         // get the sources
-        const req = await this.emberConnection.getDirectory(sourceNode)
+        const req = await this.emberConnection.getDirectory(
+            sourceNode as NumberedTreeNode<EmberElement>
+        )
         const sources = await req.response
 
         // map sourceNames to their fader number
@@ -157,30 +164,40 @@ export class LawoRubyMixerConnection {
                 ) {
                     if (this.faders[channelTypeIndex + 1]) {
                         // enable
-                        this.dispatch({
+                        store.dispatch({
                             type: ChannelActionTypes.SET_CHANNEL_LABEL,
                             mixerIndex: this.mixerIndex,
                             channel: channelTypeIndex,
                             label: this.faders[channelTypeIndex + 1],
                         })
-                        store.dispatch(
-                            storeChannelDisabled(channelTypeIndex, false)
-                        )
-                        store.dispatch(storeShowChannel(channelTypeIndex, true))
+                        store.dispatch({
+                            type: FaderActionTypes.SET_CHANNEL_DISABLED,
+                            faderIndex: channelTypeIndex,
+                            disabled: false,
+                        })
+                        store.dispatch({
+                            type: FaderActionTypes.SHOW_CHANNEL,
+                            faderIndex: channelTypeIndex,
+                            showChannel: true,
+                        })
                     } else {
                         // disable
-                        store.dispatch(
-                            storeChannelDisabled(channelTypeIndex, true)
-                        )
-                        this.dispatch({
+                        store.dispatch({
+                            type: FaderActionTypes.SET_CHANNEL_DISABLED,
+                            faderIndex: channelTypeIndex,
+                            disabled: true,
+                        })
+                        store.dispatch({
                             type: ChannelActionTypes.SET_CHANNEL_LABEL,
                             mixerIndex: this.mixerIndex,
                             channel: channelTypeIndex,
                             label: '',
                         })
-                        store.dispatch(
-                            storeShowChannel(channelTypeIndex, false)
-                        )
+                        store.dispatch({
+                            type: FaderActionTypes.SHOW_CHANNEL,
+                            faderIndex: channelTypeIndex,
+                            showChannel: false,
+                        })
                     }
                 }
             }
@@ -231,7 +248,7 @@ export class LawoRubyMixerConnection {
         }
     }
 
-    async subscribeFaderLevel(
+    private async subscribeFaderLevel(
         ch: number,
         typeIndex: number,
         channelTypeIndex: number
@@ -251,41 +268,72 @@ export class LawoRubyMixerConnection {
             if (node.contents.type !== Model.ElementType.Parameter) return
 
             logger.debug(`Subscription of channel level: ${command}`)
-            this.emberConnection.subscribe(node, () => {
-                logger.trace(`Receiving Level from Ch ${ch}`)
-                if (
-                    !state.channels[0].chMixerConnection[this.mixerIndex]
-                        .channel[ch - 1].fadeActive &&
-                    (node.contents as Model.Parameter).value as number >
+            this.emberConnection.subscribe(
+                node as NumberedTreeNode<EmberElement>,
+                () => {
+                    const levelInDecibel: number = (
+                        node.contents as Model.Parameter
+                    ).value as number
+                    const minDeciBel =
                         this.mixerProtocol.channelTypes[typeIndex].fromMixer
                             .CHANNEL_OUT_GAIN[0].min
-                ) {
-                    store.dispatch(
-                        storeFaderLevel(
-                            ch - 1,
-                            dbToFloat(
-                                (node.contents as Model.Parameter)
-                                    .value as number
-                            )
-                        )
+
+                    logger.trace(
+                        `Receiving Level from ${command} Ch ${ch - 1}: ${levelInDecibel}`
                     )
-                    global.mainThreadHandler.updatePartialStore(ch - 1)
-                    if (remoteConnections) {
-                        remoteConnections.updateRemoteFaderState(
-                            ch - 1,
-                            dbToFloat(
-                                (node.contents as Model.Parameter)
-                                    .value as number
-                            )
+
+                    if (
+                        !state.channels[0].chMixerConnection[this.mixerIndex]
+                            .channel[ch - 1].fadeActive &&
+                        levelInDecibel >= minDeciBel
+                    ) {
+                        const level = dbToFloat(levelInDecibel, minDeciBel)
+                        const isPgm =
+                            levelInDecibel >
+                            this.mixerProtocol.channelTypes[typeIndex].fromMixer
+                                .CHANNEL_OUT_GAIN[0].min
+
+                        if (isPgm) {
+                            // update the fader, but only if that means it's on-air
+                            store.dispatch({
+                                type: FaderActionTypes.SET_FADER_LEVEL,
+                                faderIndex: ch - 1,
+                                level: level,
+                            })
+                        }
+                        // update the output level anyway
+                        store.dispatch({
+                            type: ChannelActionTypes.SET_OUTPUT_LEVEL,
+                            mixerIndex: this.mixerIndex,
+                            channel: ch - 1,
+                            level: level,
+                        })
+
+                        // toggle pgm based on level
+                        logger.trace(
+                            `Set Ch ${ch - 1} pgmOn ${level > 0} from ${command} level ${level}: ${levelInDecibel}`
                         )
+                        store.dispatch({
+                            type: FaderActionTypes.SET_PGM,
+                            faderIndex: ch - 1,
+                            pgmOn: isPgm,
+                        })
+
+                        global.mainThreadHandler.updatePartialStore(ch - 1)
+                        if (remoteConnections) {
+                            remoteConnections.updateRemoteFaderState(
+                                ch - 1,
+                                level
+                            )
+                        }
                     }
                 }
-            })
+            )
         } catch (e) {
             logger.data(e).debug('error when subscribing to fader level')
         }
     }
-    async subscribeGainLevel(
+    private async subscribeGainLevel(
         ch: number,
         typeIndex: number,
         channelTypeIndex: number
@@ -303,20 +351,34 @@ export class LawoRubyMixerConnection {
             if (node.contents.type !== Model.ElementType.Parameter) return
 
             logger.debug(`Subscription of channel gain: ${command}`)
-            this.emberConnection.subscribe(node, () => {
-                logger.trace(`Receiving Gain from Ch ${ch}`)
-                const value = (node.contents as Model.Parameter).value as number
-                const level = (value - proto.min) / (proto.max - proto.min)
-                if ((node.contents as Model.Parameter).value as number > proto.min) {
-                    store.dispatch(storeInputGain(ch - 1, level))
-                    global.mainThreadHandler.updatePartialStore(ch - 1)
+            this.emberConnection.subscribe(
+                node as NumberedTreeNode<EmberElement>,
+                () => {
+                    const value = (node.contents as Model.Parameter)
+                        .value as number
+                    const minDeciBel = proto.min
+                    const level = dbToFloat(value, minDeciBel)
+                    logger.trace(
+                        `Receiving Gain from ${command} Ch ${ch - 1}: ${value}, level: ${level}`
+                    )
+                    if (
+                        ((node.contents as Model.Parameter).value as number) >
+                        proto.min
+                    ) {
+                        store.dispatch({
+                            type: FaderActionTypes.SET_INPUT_GAIN,
+                            faderIndex: ch - 1,
+                            level: level,
+                        })
+                        global.mainThreadHandler.updatePartialStore(ch - 1)
+                    }
                 }
-            })
+            )
         } catch (e) {
             logger.data(e).debug('Error when subscribing to gain level')
         }
     }
-    async subscribeInputSelector(
+    private async subscribeInputSelector(
         ch: number,
         typeIndex: number,
         channelTypeIndex: number
@@ -333,42 +395,59 @@ export class LawoRubyMixerConnection {
 
         try {
             const node = await this.emberConnection.getElementByPath(command)
-            logger.debug(`set_cap ${ch} hasInputSel true`)
-            store.dispatch(storeCapability(ch - 1, 'hasInputSelector', true))
+            logger.debug(`set_cap ${ch - 1} hasInputSel true`)
+            store.dispatch({
+                type: FaderActionTypes.SET_CAPABILITY,
+                faderIndex: ch - 1,
+                capability: 'hasInputSelector',
+                enabled: true,
+            })
             if (node.contents.type !== Model.ElementType.Parameter) {
                 return
             }
 
             logger.debug(`Subscription of channel input selector: ${command}`)
-            this.emberConnection.subscribe(node, () => {
-                logger.trace(`Receiving InpSelector from Ch ${ch}`)
-                this.mixerProtocol.channelTypes[
-                    typeIndex
-                ].fromMixer.CHANNEL_INPUT_SELECTOR.forEach((selector, i) => {
-                    if (
-                        selector.value ===
-                        (node.contents as Model.Parameter).value
-                    ) {
-                        store.dispatch({
-                            type: SET_INPUT_SELECTOR,
-                            channel: ch - 1,
-                            selected: i + 1,
-                        })
-                        global.mainThreadHandler.updatePartialStore(ch - 1)
-                    }
-                })
-            })
+            this.emberConnection.subscribe(
+                node as NumberedTreeNode<EmberElement>,
+                () => {
+                    logger.trace(
+                        `Receiving InpSelector from ${command} Ch ${ch - 1}`
+                    )
+                    this.mixerProtocol.channelTypes[
+                        typeIndex
+                    ].fromMixer.CHANNEL_INPUT_SELECTOR.forEach(
+                        (selector, i) => {
+                            if (
+                                selector.value ===
+                                (node.contents as Model.Parameter).value
+                            ) {
+                                store.dispatch({
+                                    type: FaderActionTypes.SET_INPUT_SELECTOR,
+                                    faderIndex: ch - 1,
+                                    selected: i + 1,
+                                })
+                                global.mainThreadHandler.updatePartialStore(
+                                    ch - 1
+                                )
+                            }
+                        }
+                    )
+                }
+            )
         } catch (e) {
             if (e.message.match(/could not find node/i)) {
-                logger.debug(`set_cap ${ch} hasInputSel false`)
-                store.dispatch(
-                    storeCapability(ch - 1, 'hasInputSelector', false)
-                )
+                logger.debug(`set_cap ${ch - 1} hasInputSel false`)
+                store.dispatch({
+                    type: FaderActionTypes.SET_CAPABILITY,
+                    faderIndex: ch - 1,
+                    capability: 'hasInputSelector',
+                    enabled: false,
+                })
             }
             logger.data(e).debug('Error when subscribing to input selector')
         }
     }
-    async subscribeAMixState(
+    private async subscribeAMixState(
         ch: number,
         typeIndex: number,
         channelTypeIndex: number
@@ -386,40 +465,50 @@ export class LawoRubyMixerConnection {
         try {
             const node = await this.emberConnection.getElementByPath(command)
             logger.debug(`set_cap ${ch - 1} hasAMix true`)
-            store.dispatch(storeCapability(ch - 1, 'hasAMix', true))
+            store.dispatch({
+                type: FaderActionTypes.SET_CAPABILITY,
+                faderIndex: ch - 1,
+                capability: 'hasAMix',
+                enabled: true,
+            })
             if (node.contents.type !== Model.ElementType.Parameter) {
                 return
             }
 
             logger.debug(`Subscription of AMix state: ${command}`)
-            this.emberConnection.subscribe(node, () => {
-                logger.trace(`Receiving AMix state from Ch ${ch}`)
-                store.dispatch(
-                    storeSetAMix(
-                        ch - 1,
-                        (node.contents as Model.Parameter).value === 1
+            this.emberConnection.subscribe(
+                node as NumberedTreeNode<EmberElement>,
+                () => {
+                    logger.trace(
+                        `Receiving AMix state from ${command} Ch ${ch - 1}`
                     )
-                )
-                global.mainThreadHandler.updatePartialStore(ch - 1)
-            })
+
+                    store.dispatch({
+                        type: FaderActionTypes.SET_AMIX,
+                        faderIndex: ch - 1,
+                        state:
+                            (node.contents as Model.Parameter).value === true,
+                    })
+                    global.mainThreadHandler.updatePartialStore(ch - 1)
+                }
+            )
         } catch (e) {
             if (e.message.match(/could not find node/i)) {
-                logger.debug(`set_cap ${ch - 1} hasAMix false`)
-                store.dispatch(storeCapability(ch - 1, 'hasAMix', false))
+                logger.debug(`set_cap ${command} Ch ${ch - 1} hasAMix false`)
+                store.dispatch({
+                    type: FaderActionTypes.SET_CAPABILITY,
+                    faderIndex: ch - 1,
+                    capability: 'hasAMix',
+                    enabled: false,
+                })
             }
-            logger.data(e).debug('error when subscribing to input selector')
+            logger
+                .data(e)
+                .debug(`error when subscribing to input selector ${command}`)
         }
     }
 
-    subscribeChannelName() {
-        return true
-    }
-
-    pingMixerCommand() {
-        return true
-    }
-
-    sendOutMessage(
+    private sendOutMessage(
         mixerMessage: string,
         channel: number,
         value: string | number | boolean,
@@ -431,22 +520,32 @@ export class LawoRubyMixerConnection {
 
         let message = mixerMessage.replace('{channel}', channelString)
 
+        const timestamp0 = performance.now()
+
         this.emberConnection
             .getElementByPath(message)
             .then((element: any) => {
-                logger.trace(`Sending out message: ${message}`)
-                return this.emberConnection.setValue(
-                    element,
-                    typeof value === 'string' ? parseFloat(value) : value
+                const v = typeof value === 'string' ? parseFloat(value) : value
+                if (element.contents.value === v)
+                    return { response: undefined, sentOk: false } // contents is already the same - a bit risky but yolo
+                logger.trace(
+                    `Sending out message: ${message} val: ${v} typeof: ${typeof v}`,
+                    {
+                        epochBegin: timestamp0,
+                        diff: performance.now() - timestamp0,
+                    }
                 )
+                return this.emberConnection.setValue(element, v)
             })
             .then((req) => req.response)
             .catch((error: any) => {
-                logger.data(error).error('Ember Error ')
+                logger
+                    .data(error)
+                    .error('Ember Error for ' + message + ' -> ' + value)
             })
     }
 
-    sendOutLevelMessage(channel: number, value: number) {
+    private sendOutLevelMessage(channel: number, value: number) {
         const source = this.faders[channel]
         if (!channel) return
 
@@ -454,46 +553,26 @@ export class LawoRubyMixerConnection {
             this.mixerProtocol.channelTypes[0].toMixer.CHANNEL_OUT_GAIN[0]
                 .mixerMessage
 
-        logger.trace(`Sending out Level: ${value}  To ${source}`)
+        logger.trace(`Sending out value: ${value}  To ${source}`)
 
         this.sendOutMessage(mixerMessage, channel, value)
     }
 
-    updateOutLevel(channelIndex: number) {
-        let channelType =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].channelType
-        let channelTypeIndex =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].channelTypeIndex
-        let protocol =
-            this.mixerProtocol.channelTypes[channelType].toMixer
-                .CHANNEL_OUT_GAIN[0]
-        let level =
-            (state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].outputLevel -
-                protocol.min) *
-            (protocol.max - protocol.min)
-        this.sendOutLevelMessage(channelTypeIndex + 1, level)
-    }
-
     updateFadeIOLevel(channelIndex: number, outputLevel: number) {
-        let channelType =
+        const channelType =
             state.channels[0].chMixerConnection[this.mixerIndex].channel[
                 channelIndex
             ].channelType
-        let channelTypeIndex =
+        const channelTypeIndex =
             state.channels[0].chMixerConnection[this.mixerIndex].channel[
                 channelIndex
             ].channelTypeIndex
-        let protocol =
-            this.mixerProtocol.channelTypes[channelType].toMixer
-                .CHANNEL_OUT_GAIN[0]
 
-        const level = floatToDB(outputLevel)
+        const level = floatToDB(
+            outputLevel,
+            this.mixerProtocol.channelTypes[channelType].toMixer
+                .CHANNEL_OUT_GAIN[0].min
+        )
 
         this.sendOutLevelMessage(channelTypeIndex + 1, level)
     }
@@ -534,7 +613,7 @@ export class LawoRubyMixerConnection {
             )
             await response
         } catch (e) {
-            logger.data(e).error('Ember Error ')
+            logger.data(e).error('Ember Error while updating PFL State')
         }
     }
 
@@ -569,13 +648,13 @@ export class LawoRubyMixerConnection {
             state.channels[0].chMixerConnection[this.mixerIndex].channel[
                 channelIndex
             ]
-        let channelType = channel.channelType
-        let channelTypeIndex = channel.channelTypeIndex
-        let protocol =
+        const channelType = channel.channelType
+        const channelTypeIndex = channel.channelTypeIndex
+        const protocol =
             this.mixerProtocol.channelTypes[channelType].toMixer
                 .CHANNEL_INPUT_GAIN[0]
 
-        let level = gain * (protocol.max - protocol.min) + protocol.min
+        const level = floatToDB(gain)
 
         this.sendOutMessage(
             protocol.mixerMessage,
@@ -605,7 +684,7 @@ export class LawoRubyMixerConnection {
         return true
     }
 
-    updateFx(fxParam: fxParamsList, channelIndex: number, level: number) {
+    updateFx(channelIndex: number, fxParam: FxParam, level: number) {
         return true
     }
     updateAuxLevel(channelIndex: number, auxSendIndex: number, level: number) {
@@ -621,4 +700,10 @@ export class LawoRubyMixerConnection {
     injectCommand(command: string[]) {
         return true
     }
+
+    updateChannelSetting(
+        channelIndex: number,
+        setting: string,
+        value: string
+    ) {}
 }

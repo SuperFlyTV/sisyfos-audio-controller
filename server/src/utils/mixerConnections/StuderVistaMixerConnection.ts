@@ -5,37 +5,35 @@ import net from 'net'
 
 //Utils:
 import {
-    fxParamsList,
-    IMixerProtocol,
+    FxParam,
+    MixerProtocol,
 } from '../../../../shared/src/constants/MixerProtocolInterface'
 import { logger } from '../logger'
-import { storeSetMixerOnline } from '../../../../shared/src/actions/settingsActions'
 import {
-    storeFaderLevel,
-    storeSetMute,
-    storeTogglePgm,
+    SettingsActionTypes,
+} from '../../../../shared/src/actions/settingsActions'
+import {
+    FaderActionTypes,
 } from '../../../../shared/src/actions/faderActions'
 import {
     ChannelActionTypes,
-    ChannelActions,
 } from '../../../../shared/src/actions/channelActions'
 import { remoteConnections } from '../../mainClasses'
 import {
-    IChannelReference,
-    IFader,
+    ChannelReference,
+    Fader,
 } from '../../../../shared/src/reducers/fadersReducer'
-import { IChannel } from '../../../../shared/src/reducers/channelsReducer'
-import { Dispatch } from '@reduxjs/toolkit'
+import { Channel } from '../../../../shared/src/reducers/channelsReducer'
+import { MixerConnection } from '.'
 
-export class StuderVistaMixerConnection {
-    dispatch: Dispatch<ChannelActions>
-    mixerProtocol: IMixerProtocol
+export class StuderVistaMixerConnection implements MixerConnection {
+    mixerProtocol: MixerProtocol
     mixerIndex: number
     deviceRoot: any
     emberNodeObject: Array<any>
     mixerConnection: any
 
-    constructor(mixerProtocol: IMixerProtocol, mixerIndex: number) {
+    constructor(mixerProtocol: MixerProtocol, mixerIndex: number) {
         this.sendOutMessage = this.sendOutMessage.bind(this)
         this.pingMixerCommand = this.pingMixerCommand.bind(this)
 
@@ -73,7 +71,7 @@ export class StuderVistaMixerConnection {
             })
     }
 
-    setupMixerConnection() {
+    private setupMixerConnection() {
         logger.info('Ember connection established')
         this.mixerConnection.on('data', (data: any) => {
             let bufferString: string = ''
@@ -128,10 +126,10 @@ export class StuderVistaMixerConnection {
         }
     }
 
-    findChannelInArray(channelType: number, channelTypeIndex: number): number {
+    private findChannelInArray(channelType: number, channelTypeIndex: number): number {
         let channelArrayIndex = 0
         state.channels[0].chMixerConnection[this.mixerIndex].channel.forEach(
-            (channel: IChannel, index: number) => {
+            (channel: Channel, index: number) => {
                 if (
                     channel.channelType === channelType &&
                     channel.channelTypeIndex === channelTypeIndex
@@ -144,8 +142,8 @@ export class StuderVistaMixerConnection {
     }
 
     private getAssignedFaderIndex(channelIndex: number) {
-        return state.faders[0].fader.findIndex((fader: IFader) =>
-            fader.assignedChannels?.some((assigned: IChannelReference) => {
+        return state.faders[0].fader.findIndex((fader: Fader) =>
+            fader.assignedChannels?.some((assigned: ChannelReference) => {
                 return (
                     assigned.mixerIndex === this.mixerIndex &&
                     assigned.channelIndex === channelIndex
@@ -154,7 +152,7 @@ export class StuderVistaMixerConnection {
         )
     }
 
-    checkEmberCommand(message: string, protocolMessage: string): boolean {
+    private checkEmberCommand(message: string, protocolMessage: string): boolean {
         let messageArray = message.split('31 ')
         if (messageArray.length > 2) {
             let protocolArray = protocolMessage.split(' ')
@@ -177,7 +175,7 @@ export class StuderVistaMixerConnection {
         }
     }
 
-    handleEmberLevelCommand(message: string) {
+    private handleEmberLevelCommand(message: string) {
         // Extract Channel number and Channel Type (mono-st-51)
         let { channelTypeIndex, channelType } = this.extractMessageIndex(
             this.mixerProtocol.channelTypes[0].fromMixer.CHANNEL_OUT_GAIN[0]
@@ -213,14 +211,18 @@ export class StuderVistaMixerConnection {
             state.faders[0].fader[assignedFaderIndex].pgmOn ||
             state.faders[0].fader[assignedFaderIndex].voOn
         ) {
-            store.dispatch(storeFaderLevel(assignedFaderIndex, value))
+            store.dispatch({
+                type: FaderActionTypes.SET_FADER_LEVEL,
+                faderIndex: assignedFaderIndex,
+                level: value,
+            })
             state.faders[0].fader[assignedFaderIndex].assignedChannels?.forEach(
-                (assignedChannel: IChannelReference) => {
+                (assignedChannel: ChannelReference) => {
                     if (
                         assignedChannel.mixerIndex === this.mixerIndex &&
                         assignedChannel.channelIndex !== channelArrayIndex
                     ) {
-                        this.dispatch({
+                        store.dispatch({
                             type: ChannelActionTypes.SET_OUTPUT_LEVEL,
                             mixerIndex: this.mixerIndex,
                             channel: assignedChannel.channelIndex,
@@ -232,7 +234,10 @@ export class StuderVistaMixerConnection {
 
             if (!state.faders[0].fader[assignedFaderIndex].pgmOn) {
                 if (value > 0) {
-                    store.dispatch(storeTogglePgm(assignedFaderIndex))
+                    store.dispatch({
+                        type: FaderActionTypes.TOGGLE_PGM,
+                        faderIndex: assignedFaderIndex,
+                    })
                 }
             }
             global.mainThreadHandler.updatePartialStore(assignedFaderIndex)
@@ -240,7 +245,7 @@ export class StuderVistaMixerConnection {
         }
     }
 
-    handleEmberAuxCommand(message: string) {
+    private handleEmberAuxCommand(message: string) {
         // Extract Channel number, Aux and Type (mono-st-51)
         let { channelTypeIndex, channelType, auxIndex } =
             this.extractMessageIndex(
@@ -263,7 +268,7 @@ export class StuderVistaMixerConnection {
             channelTypeIndex
         )
 
-        this.dispatch({
+        store.dispatch({
             type: ChannelActionTypes.SET_AUX_LEVEL,
             mixerIndex: this.mixerIndex,
             channel: channelArrayIndex,
@@ -275,7 +280,7 @@ export class StuderVistaMixerConnection {
         remoteConnections.updateRemoteAuxPanels()
     }
 
-    handleEmberMuteCommand(message: string) {
+    private handleEmberMuteCommand(message: string) {
         // Extract Channel number and Channel Type (mono-st-51)
         let { channelTypeIndex, channelType } = this.extractMessageIndex(
             this.mixerProtocol.channelTypes[0].fromMixer.CHANNEL_MUTE_ON[0]
@@ -295,11 +300,15 @@ export class StuderVistaMixerConnection {
             this.findChannelInArray(channelType, channelTypeIndex)
         )
 
-        store.dispatch(storeSetMute(assignedFader, mute))
+        store.dispatch({
+            type: FaderActionTypes.SET_MUTE,
+            faderIndex: assignedFader,
+            muteOn: mute,
+        })
         global.mainThreadHandler.updatePartialStore(assignedFader)
     }
 
-    extractMessageIndex(
+    private extractMessageIndex(
         protocolMessage: string,
         message: string
     ): { channelTypeIndex: number; channelType: number; auxIndex: number } {
@@ -335,7 +344,7 @@ export class StuderVistaMixerConnection {
         }
     }
 
-    extractValue(message: string): number {
+    private extractValue(message: string): number {
         let messageArray = message.split('31 ')
         let hexString = messageArray[messageArray.length - 1]
 
@@ -360,12 +369,16 @@ export class StuderVistaMixerConnection {
         return value
     }
 
-    mixerOnline(onLineState: boolean) {
-        store.dispatch(storeSetMixerOnline(this.mixerIndex, onLineState))
+    private mixerOnline(onLineState: boolean) {
+        store.dispatch({
+            type: SettingsActionTypes.SET_MIXER_ONLINE,
+            mixerIndex: this.mixerIndex,
+            mixerOnline: onLineState,
+        })
         global.mainThreadHandler.updateMixerOnline(this.mixerIndex)
     }
 
-    pingMixerCommand() {
+    private pingMixerCommand() {
         this.mixerProtocol.pingCommand.map((command) => {
             if (command.mixerMessage.includes('{channel}')) {
                 this.pingChannel(command.mixerMessage)
@@ -382,10 +395,10 @@ export class StuderVistaMixerConnection {
         })
     }
 
-    pingChannel(mixerMessage: string) {
-        state.faders[0].fader.forEach((fader: IFader, index: number) => {
+    private pingChannel(mixerMessage: string) {
+        state.faders[0].fader.forEach((fader: Fader, index: number) => {
             fader.assignedChannels?.forEach(
-                (channelReference: IChannelReference) => {
+                (channelReference: ChannelReference) => {
                     if (channelReference.mixerIndex === this.mixerIndex) {
                         const channel =
                             state.channels[0].chMixerConnection[this.mixerIndex]
@@ -419,7 +432,7 @@ export class StuderVistaMixerConnection {
         })
     }
 
-    pingAuxSend(message: string) {
+    private pingAuxSend(message: string) {
         for (
             let index = 0;
             index < state.settings[0].mixers[this.mixerIndex].numberOfAux;
@@ -440,7 +453,7 @@ export class StuderVistaMixerConnection {
         }
     }
 
-    sendOutMessage(
+    private sendOutMessage(
         mixerMessage: string,
         channel: number,
         value: string | number
@@ -489,7 +502,7 @@ export class StuderVistaMixerConnection {
         logger.trace(`Send HEX: ${mixerMessage}`)
     }
 
-    sendOutLevelMessage(channel: number, value: number) {
+    private sendOutLevelMessage(channel: number, value: number) {
         let levelMessage: string
         let channelVal: number
         let channelType =
@@ -536,24 +549,6 @@ export class StuderVistaMixerConnection {
         )
         this.mixerConnection.write(buf)
         logger.trace(`Send HEX: ${levelMessage}`)
-    }
-
-    sendOutRequest(mixerMessage: string, channel: number) {
-        return
-    }
-
-    updateOutLevel(channelIndex: number) {
-        let outputlevel =
-            state.channels[0].chMixerConnection[this.mixerIndex].channel[
-                channelIndex
-            ].outputLevel
-        let level = 40 * Math.log(1.295 * outputlevel)
-        if (level < -90) {
-            level = -90
-        }
-        // logger.debug(`Log level: ${level}`)
-
-        this.sendOutLevelMessage(channelIndex + 1, level)
     }
 
     updateFadeIOLevel(channelIndex: number, outputLevel: number) {
@@ -615,7 +610,7 @@ export class StuderVistaMixerConnection {
         return true
     }
 
-    updateFx(fxParam: fxParamsList, channelIndex: number, level: number) {
+    updateFx(channelIndex: number, fxParam: FxParam, level: number) {
         return true
     }
     updateAuxLevel(channelIndex: number, auxSendIndex: number, level: number) {
@@ -652,7 +647,13 @@ export class StuderVistaMixerConnection {
 
     loadMixerPreset(presetName: string) {}
 
-    injectCommand(command: string[]) {
-        return true
-    }
+    injectCommand(command: string[]) {}
+
+    updateAMixState(channelIndex: number, amixOn: boolean) {}
+
+    updateChannelSetting(
+        channelIndex: number,
+        setting: string,
+        value: string
+    ) {}
 }

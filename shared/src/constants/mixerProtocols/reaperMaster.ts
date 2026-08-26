@@ -1,7 +1,7 @@
-import { IMixerProtocol } from '../MixerProtocolInterface'
+import { MixerProtocol, MixerConnectionTypes } from '../MixerProtocolInterface'
 
-export const ReaperMaster: IMixerProtocol = {
-    protocol: 'OSC',
+export const ReaperMaster: MixerProtocol = {
+    protocol: MixerConnectionTypes.OSC,
     label: 'Reaper DAW Master mode(reaper.fm)',
     presetFileExtension: '',
     MAX_UPDATES_PER_SECOND: 10,
@@ -36,7 +36,7 @@ export const ReaperMaster: IMixerProtocol = {
                     {
                         mixerMessage: '/track/{channel}/name',
                         value: 0,
-                        type: 'f',
+                        type: 's',
                         min: 0,
                         max: 1,
                         zero: 0.75,
@@ -58,7 +58,7 @@ export const ReaperMaster: IMixerProtocol = {
                     {
                         mixerMessage: '/track/{channel}/name',
                         value: 0,
-                        type: 'f',
+                        type: 's',
                         min: 0,
                         max: 1,
                         zero: 0.75,
@@ -88,7 +88,7 @@ export const ReaperMaster: IMixerProtocol = {
         },
         {
             channelTypeName: 'MASTER',
-            channelTypeColor: '#0f0f3f',
+            channelTypeColor: '#1f2f1f',
             fromMixer: {
                 CHANNEL_OUT_GAIN: [
                     {

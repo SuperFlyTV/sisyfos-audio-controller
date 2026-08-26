@@ -1,6 +1,6 @@
 {
     "name": "desktop",
-    "version": "4.17.0",
+    "version": "4.22.0",
     "main": "electron.js",
     "license": "MIT",
     "scripts": {
@@ -10,7 +10,7 @@
         "prepare": "node prepare-package.js"
     },
     "dependencies": {
-        "server": "^1.0.38"
+        "server": "workspace:*"
     },
     "devDependencies": {
         "electron": "16.2.6",
@@ -22,6 +22,7 @@
         "directories": {
             "output": "dist"
         },
+        "npmRebuild": false,
         "productName": "Sisyfos Audio Controller"
     },
     "description": "Audio mixer build with the logic from a video mixer",
@@ -31,8 +32,8 @@
     },
     "contributors": [
         {
-            "name": "Balte de Wit",
-            "email": "balte@superfly.tv",
+            "name": "Mint de Wit",
+            "email": "mint@superfly.tv",
             "url": "https://superfly.tv"
         },
         {

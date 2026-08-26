@@ -1,17 +1,16 @@
-import {
-    ChannelActions,
-    ChannelActionTypes,
-} from '../actions/channelActions'
+import { logger } from '../../../server/src/utils/logger'
+import { ChannelActionTypes } from '../actions/channelActions'
+import { RootAction, RootState } from './indexReducer'
 
-export interface IChannels {
-    chMixerConnection: IchMixerConnection[]
+export interface Channels {
+    chMixerConnection: ChMixerConnection[]
 }
 
-export interface IchMixerConnection {
-    channel: Array<IChannel>
+export interface ChMixerConnection {
+    channel: Array<Channel>
 }
 
-export interface IChannel {
+export interface Channel {
     channelType: number
     channelTypeIndex: number
     assignedFader: number
@@ -19,19 +18,19 @@ export interface IChannel {
     fadeActive: boolean
     outputLevel: number
     auxLevel: number[]
-    private?: {
+    privateData?: {
         [key: string]: string
     }
 }
 
-export interface InumberOfChannels {
+export interface NumberOfChannels {
     numberOfTypeInCh: number[]
 }
 
-const defaultChannelsReducerState = (
-    numberOfChannels: InumberOfChannels[]
-): IChannels[] => {
-    let defaultObj: IChannels[] = [
+export const defaultChannelsReducerState = (
+    numberOfChannels: NumberOfChannels[]
+): Channels[] => {
+    let defaultObj: Channels[] = [
         {
             chMixerConnection: [],
         },
@@ -68,13 +67,29 @@ const defaultChannelsReducerState = (
 
 export const channels = (
     state = defaultChannelsReducerState([{ numberOfTypeInCh: [1] }]),
-    action: ChannelActions
-): Array<IChannels> => {
-    let nextState = [
-        {
-            chMixerConnection: [...state[0].chMixerConnection],
-        },
-    ]
+    action: RootAction,
+    fullState?: RootState
+): Array<Channels> => {
+    if (!(action.type in ChannelActionTypes)) {
+        return state
+    }
+    let nextState = [structuredClone(state[0])]
+
+    if (
+        'mixerIndex' in action &&
+        nextState[0].chMixerConnection[action.mixerIndex] === undefined
+    ) {
+        return nextState
+    }
+    if (
+        'mixerIndex' in action &&
+        'channel' in action &&
+        nextState[0].chMixerConnection[action.mixerIndex]?.channel[
+            action.channel
+        ] === undefined
+    ) {
+        return nextState
+    }
 
     switch (action.type) {
         case ChannelActionTypes.SET_OUTPUT_LEVEL:
@@ -85,22 +100,68 @@ export const channels = (
         case ChannelActionTypes.SET_COMPLETE_CH_STATE:
             nextState = defaultChannelsReducerState(action.numberOfTypeChannels)
 
-            nextState[0].chMixerConnection.forEach(
-                (chMixerConnection: IchMixerConnection, mixerIndex: number) => {
-                    chMixerConnection.channel.forEach(
-                        (channel: any, index: number) => {
+            action.allState.chMixerConnection.forEach(
+                (
+                    allStateChMixerConnection: ChMixerConnection,
+                    mixerIndex: number
+                ) => {
+                    let typeIndex = 0
+                    let chIndexInType = 0
+                    let chIndexInState = 0
+                    allStateChMixerConnection.channel.forEach(
+                        (allStateChannel: any, index: number) => {
+                            // Only proceed if channel type is equal or greater than the current type index
+                            // To avoid setting state for channel types that has been removed, or ingesting channels out of order
                             if (
-                                index <
-                                action.allState.chMixerConnection[mixerIndex]
-                                    ?.channel.length
+                                allStateChannel.channelType >= typeIndex &&
+                                action.numberOfTypeChannels[mixerIndex]
+                                    .numberOfTypeInCh.length >
+                                    allStateChannel.channelType
                             ) {
-                                nextState[0].chMixerConnection[
-                                    mixerIndex
-                                ].channel[index] =
-                                    action.allState.chMixerConnection[
+                                // If new channel type:
+                                if (allStateChannel.channelType > typeIndex) {
+                                    typeIndex = allStateChannel.channelType
+                                    chIndexInType = 0
+                                    // Set channel index in state to the first channel of the new type
+                                    // Can happen if number of channels has been changed in settings
+                                    chIndexInState =
+                                        nextState[0].chMixerConnection[
+                                            mixerIndex
+                                        ].channel.findIndex(
+                                            (channel: Channel) =>
+                                                channel.channelType ===
+                                                typeIndex
+                                        )
+                                }
+
+                                // Only set channel state if it exists in next state
+                                // And only if it does not exceed the number of channels in the type
+                                // This is to avoid setting state for channels that has been removed
+                                if (
+                                    nextState[0].chMixerConnection[mixerIndex]
+                                        .channel[chIndexInState] !==
+                                        undefined &&
+                                    action.numberOfTypeChannels[mixerIndex]
+                                        .numberOfTypeInCh[typeIndex] >
+                                        chIndexInType &&
+                                    chIndexInState > -1
+                                ) {
+                                    nextState[0].chMixerConnection[
                                         mixerIndex
-                                    ].channel[index]
+                                    ].channel[chIndexInState] =
+                                        allStateChMixerConnection.channel[index]
+                                    nextState[0].chMixerConnection[
+                                        mixerIndex
+                                    ].channel[chIndexInState].channelTypeIndex =
+                                        chIndexInType
+                                    nextState[0].chMixerConnection[
+                                        mixerIndex
+                                    ].channel[chIndexInState].channelType =
+                                        typeIndex
+                                }
                             }
+                            chIndexInState++
+                            chIndexInType++
                         }
                     )
                 }
@@ -117,7 +178,10 @@ export const channels = (
             ].fadeActive = !!action.active
             return nextState
         case ChannelActionTypes.SET_ASSIGNED_FADER:
-            if (nextState[0].chMixerConnection[action.mixerIndex].channel.length > action.channel) {
+            if (
+                nextState[0].chMixerConnection[action.mixerIndex].channel
+                    .length > action.channel
+            ) {
                 nextState[0].chMixerConnection[action.mixerIndex].channel[
                     action.channel
                 ].assignedFader = action.faderNumber
@@ -144,15 +208,15 @@ export const channels = (
             if (
                 !nextState[0].chMixerConnection[action.mixerIndex].channel[
                     action.channel
-                ].private
+                ].privateData
             ) {
                 nextState[0].chMixerConnection[action.mixerIndex].channel[
                     action.channel
-                ].private = {}
+                ].privateData = {}
             }
             nextState[0].chMixerConnection[action.mixerIndex].channel[
                 action.channel
-            ].private![action.tag] = action.value
+            ].privateData![action.tag] = action.value
             return nextState
         case ChannelActionTypes.SET_CHANNEL_LABEL:
             nextState[0].chMixerConnection[action.mixerIndex].channel[

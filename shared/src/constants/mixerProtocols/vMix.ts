@@ -1,27 +1,25 @@
-import { IMixerProtocol, fxParamsList } from '../MixerProtocolInterface'
+import {
+    VMixMixerProtocol,
+    FxParam,
+    MixerConnectionTypes,
+    emptyMixerMessage,
+} from '../MixerProtocolInterface'
 
-export const VMix: IMixerProtocol = {
-    protocol: 'VMIX',
-    fxList: fxParamsList,
+export const VMix: VMixMixerProtocol = {
+    protocol: MixerConnectionTypes.vMix,
+    fxList: FxParam,
     label: 'VMix Audio Control',
-    presetFileExtension: 'vmix',
-    loadPresetCommand: [
-        {
-            mixerMessage: '/load',
-        },
-    ],
+
+    // Hardcoded LR preset name
+    lrPreset: 'LR',
+
+    // we support custom presets defined in json, with a *.vmix.json extension, used
+    // in order not to confuse them with *.vmix files, which are vMix presets that we definitely don't want to restore
+    presetFileExtension: 'vmix.json',
+    loadPresetCommand: [emptyMixerMessage()],
     MAX_UPDATES_PER_SECOND: 10,
     leadingZeros: true,
-    pingCommand: [
-        // {
-        //     mixerMessage: '/xremote',
-        // },
-        // {
-        //     mixerMessage: '/meters',
-        //     value: '/meters/1',
-        //     type: 's',
-        // },
-    ],
+    pingCommand: [],
     pingTime: 9500,
     initializeCommands: [
         {
@@ -30,88 +28,6 @@ export const VMix: IMixerProtocol = {
         {
             mixerMessage: 'AudioAutoOff',
         },
-        // {
-        //     mixerMessage: '/ch/{channel}/config/name',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/mix/{argument}/level',
-        //     type: 'aux',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/preamp/trim',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/dyn/thr',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/dyn/ratio',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/delay/time',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/1/g',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/2/g',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/3/g',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/4/g',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/dyn/thr',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/dyn/ratio',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/dyn/attack',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/dyn/hold',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/dyn/knee',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/dyn/mgain',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/dyn/ratio',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/delay/time',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/1/g',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/1/f',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/2/f',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/3/f',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/4/f',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/1/q',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/2/q',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/3/q',
-        // },
-        // {
-        //     mixerMessage: '/ch/{channel}/eq/4/q',
-        // },
     ],
     channelTypes: [
         {
@@ -123,14 +39,7 @@ export const VMix: IMixerProtocol = {
                         mixerMessage: 'SetVolume',
                     },
                 ],
-                CHANNEL_VU: [
-                    {
-                        mixerMessage: '/meters/1',
-                    },
-                    {
-                        mixerMessage: '/meters/2',
-                    },
-                ],
+                CHANNEL_VU: [emptyMixerMessage(), emptyMixerMessage()],
                 CHANNEL_INPUT_GAIN: [
                     {
                         mixerMessage: 'SetGain',
@@ -140,16 +49,8 @@ export const VMix: IMixerProtocol = {
                         valueLabel: ' dB',
                     },
                 ],
-                AUX_LEVEL: [
-                    {
-                        mixerMessage: '/ch/{channel}/mix/{argument}/level',
-                    },
-                ],
-                CHANNEL_MUTE_ON: [
-                    {
-                        mixerMessage: '/ch/{channel}/mix/on',
-                    },
-                ],
+                AUX_LEVEL: [emptyMixerMessage()],
+                CHANNEL_MUTE_ON: [emptyMixerMessage()],
             },
             toMixer: {
                 CHANNEL_OUT_GAIN: [
@@ -160,7 +61,7 @@ export const VMix: IMixerProtocol = {
                 CHANNEL_INPUT_SELECTOR: [
                     {
                         mixerMessage: 'AudioChannelMatrixApplyPreset',
-                        label: 'LR',
+                        label: 'Stereo',
                         value: 'Default',
                     },
                     {
@@ -172,6 +73,11 @@ export const VMix: IMixerProtocol = {
                         mixerMessage: 'AudioChannelMatrixApplyPreset',
                         label: 'RR',
                         value: 'RR',
+                    },
+                    {
+                        mixerMessage: 'AudioChannelMatrixApplyPreset',
+                        label: 'Mono',
+                        value: 'DualMono',
                     },
                 ],
                 CHANNEL_INPUT_GAIN: [
@@ -202,20 +108,42 @@ export const VMix: IMixerProtocol = {
                 PFL_OFF: [
                     {
                         mixerMessage: 'SoloOff',
-                        value: 1,
-                        type: 'f',
                     },
                 ],
                 PFL_ON: [
                     {
                         mixerMessage: 'SoloOn',
-                        value: 1,
+                    },
+                ],
+                AUX_LEVEL: [emptyMixerMessage()],
+            },
+        },
+        {
+            channelTypeName: 'MASTER',
+            channelTypeColor: '#1f2f1f',
+            fromMixer: {
+                CHANNEL_OUT_GAIN: [emptyMixerMessage()],
+                CHANNEL_VU: [emptyMixerMessage(), emptyMixerMessage()],
+                CHANNEL_MUTE_ON: [emptyMixerMessage()],
+            },
+            toMixer: {
+                CHANNEL_OUT_GAIN: [
+                    {
+                        mixerMessage: 'SetMasterVolume',
+                    },
+                ],
+                CHANNEL_MUTE_ON: [
+                    {
+                        mixerMessage: 'MasterAudioOff',
+                        value: 0,
                         type: 'f',
                     },
                 ],
-                AUX_LEVEL: [
+                CHANNEL_MUTE_OFF: [
                     {
-                        mixerMessage: '/ch/{channel}/mix/{argument}/level',
+                        mixerMessage: 'MasterAudioOn',
+                        value: 1,
+                        type: 'f',
                     },
                 ],
             },
