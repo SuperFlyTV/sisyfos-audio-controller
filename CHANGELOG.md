@@ -1,3 +1,9 @@
+## [26.08.0] (2026-08-27)
+
+### Other Changes
+
+- No conventional commits since last release
+
 ## [2.13.0](https://github.com/SuperFlyTV/sisyfos-audio-controller/compare/v2.12.0...v2.13.0) (2026-07-27)
 
 
