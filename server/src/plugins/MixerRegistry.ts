@@ -20,7 +20,7 @@ export class MixerRegistry {
     private pluginEntries: Record<string, PluginRegistryEntry> = {}
 
     registerBuiltins(
-        presets: Record<string, MixerProtocolGeneric> = MixerProtocolPresets,
+        presets: Record<string, MixerProtocolGeneric> = MixerProtocolPresets
     ): void {
         this.builtinPresets = { ...presets }
     }
@@ -28,27 +28,33 @@ export class MixerRegistry {
     registerPlugin(
         manifest: MixerPluginManifest,
         pluginPath: string,
-        mixers: Record<string, MixerPluginEntry>,
+        mixers: Record<string, MixerPluginEntry>
     ): void {
         for (const presetKey of Object.keys(manifest.mixers)) {
             if (!mixers[presetKey]) {
                 logger.warn(
-                    `Plugin "${manifest.id}": manifest key "${presetKey}" has no matching Mixers export`,
+                    `Plugin "${manifest.id}": manifest key "${presetKey}" has no matching Mixers export`
                 )
                 continue
             }
 
-            if (this.pluginEntries[presetKey] || this.builtinPresets[presetKey]) {
+            if (
+                this.pluginEntries[presetKey] ||
+                this.builtinPresets[presetKey]
+            ) {
                 logger.error(
-                    `Plugin "${manifest.id}": preset key "${presetKey}" is already registered — skipping plugin entry`,
+                    `Plugin "${manifest.id}": preset key "${presetKey}" is already registered — skipping plugin entry`
                 )
                 continue
             }
 
             const entry = mixers[presetKey]
-            if (!entry.protocol || typeof entry.createConnection !== 'function') {
+            if (
+                !entry.protocol ||
+                typeof entry.createConnection !== 'function'
+            ) {
                 logger.error(
-                    `Plugin "${manifest.id}": mixer "${presetKey}" must export protocol and createConnection`,
+                    `Plugin "${manifest.id}": mixer "${presetKey}" must export protocol and createConnection`
                 )
                 continue
             }
@@ -79,7 +85,7 @@ export class MixerRegistry {
             return this.builtinPresets[presetKey]
         }
         logger.warn(
-            `Unknown mixer preset "${presetKey}", falling back to sslSystemT`,
+            `Unknown mixer preset "${presetKey}", falling back to sslSystemT`
         )
         return this.builtinPresets.sslSystemT
     }
@@ -104,7 +110,7 @@ export class MixerRegistry {
             ([preset, entry]) => ({
                 value: preset,
                 label: entry.displayName || entry.protocol.label || preset,
-            }),
+            })
         )
 
         return [...builtinList, ...pluginList]
@@ -112,13 +118,13 @@ export class MixerRegistry {
 
     createConnection(
         presetKey: string,
-        mixerIndex: number,
+        mixerIndex: number
     ): MixerConnection | undefined {
         const pluginEntry = this.pluginEntries[presetKey]
         if (pluginEntry) {
             const connection = pluginEntry.createConnection(
                 pluginEntry.protocol,
-                mixerIndex,
+                mixerIndex
             ) as MixerConnection
             return connection
         }

@@ -11,13 +11,8 @@ import {
     FxParam,
     MixerProtocol,
 } from '../../../../shared/src/constants/MixerProtocolInterface'
-import {
-    ChannelActionTypes,
-
-} from '../../../../shared/src/actions/channelActions'
-import {
-    FaderActionTypes,
-} from '../../../../shared/src/actions/faderActions'
+import { ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
+import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
 import { logger } from '../logger'
 import {
     ChannelReference,
@@ -118,16 +113,14 @@ export class MidiMixerConnection implements MixerConnection {
                 if (state.faders[0].fader[faderChannel - 1].pgmOn) {
                     state.faders[0].fader[
                         faderChannel - 1
-                    ].assignedChannels?.forEach(
-                        (channel: ChannelReference) => {
-                            if (channel.mixerIndex === this.mixerIndex) {
-                                this.updateOutLevel(
-                                    channel.channelIndex,
-                                    faderChannel - 1
-                                )
-                            }
+                    ].assignedChannels?.forEach((channel: ChannelReference) => {
+                        if (channel.mixerIndex === this.mixerIndex) {
+                            this.updateOutLevel(
+                                channel.channelIndex,
+                                faderChannel - 1
+                            )
                         }
-                    )
+                    })
                 }
             }
         })
@@ -140,7 +133,11 @@ export class MidiMixerConnection implements MixerConnection {
         return true
     }
 
-    private sendOutMessage(ctrlMessage: string, channel: number, value: string) {
+    private sendOutMessage(
+        ctrlMessage: string,
+        channel: number,
+        value: string
+    ) {
         if (
             ctrlMessage != 'none' &&
             0 <= parseFloat(value) &&

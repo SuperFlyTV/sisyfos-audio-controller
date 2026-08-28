@@ -66,21 +66,21 @@ yarn start:local
 
 Verify:
 
-- Sisyfos fader moves update the mock device UI
-- Mock Web UI hardware moves (`source: "hardware"`) update Sisyfos
-- FX controls in the channel strip update the mock device (`setFx`)
-- Mock Web UI FX moves update Sisyfos (`SET_FADER_FX`)
-- Input gain control updates the mock device (`setInputGain`)
-- Mock Web UI input gain moves update Sisyfos (`SET_INPUT_GAIN`)
-- Input selector buttons update the mock device (`setInputSelector`)
-- Mock Web UI input selector moves update Sisyfos (`SET_INPUT_SELECTOR`)
-- AMix button updates the mock device (`setAMix`) when **IN 3.ROW BUTTON** is set to **Amix**
-- Mock Web UI AMix moves update Sisyfos (`SET_AMIX`)
-- Aux send levels update the mock device (`setAuxLevel`)
-- Mock Web UI aux level moves update Sisyfos (`SET_AUX_LEVEL`)
-- VU meters in Sisyfos track mock device `vuLevel` streaming (0.0–1.0)
-- Mixer online indicator reflects WebSocket connect/disconnect
-- Plugin appears in Settings mixer protocol dropdown
+-   Sisyfos fader moves update the mock device UI
+-   Mock Web UI hardware moves (`source: "hardware"`) update Sisyfos
+-   FX controls in the channel strip update the mock device (`setFx`)
+-   Mock Web UI FX moves update Sisyfos (`SET_FADER_FX`)
+-   Input gain control updates the mock device (`setInputGain`)
+-   Mock Web UI input gain moves update Sisyfos (`SET_INPUT_GAIN`)
+-   Input selector buttons update the mock device (`setInputSelector`)
+-   Mock Web UI input selector moves update Sisyfos (`SET_INPUT_SELECTOR`)
+-   AMix button updates the mock device (`setAMix`) when **IN 3.ROW BUTTON** is set to **Amix**
+-   Mock Web UI AMix moves update Sisyfos (`SET_AMIX`)
+-   Aux send levels update the mock device (`setAuxLevel`)
+-   Mock Web UI aux level moves update Sisyfos (`SET_AUX_LEVEL`)
+-   VU meters in Sisyfos track mock device `vuLevel` streaming (0.0–1.0)
+-   Mixer online indicator reflects WebSocket connect/disconnect
+-   Plugin appears in Settings mixer protocol dropdown
 
 ## Manual WebSocket test
 
@@ -110,11 +110,11 @@ Presets use the mock device JSON format (`{ "channels": [...] }`). **IMPORT** up
 
 Inbound hardware feedback updates Redux:
 
-- `fx` → `SET_FADER_FX`
-- `inputGain` → `SET_INPUT_GAIN`
-- `inputSelector` → `SET_INPUT_SELECTOR`
-- `amixOn` → `SET_AMIX`
-- `auxLevel` → `SET_AUX_LEVEL`
+-   `fx` → `SET_FADER_FX`
+-   `inputGain` → `SET_INPUT_GAIN`
+-   `inputSelector` → `SET_INPUT_SELECTOR`
+-   `amixOn` → `SET_AMIX`
+-   `auxLevel` → `SET_AUX_LEVEL`
 
 `presetLoaded` is logged on the server (no Redux dispatch).
 
@@ -124,6 +124,5 @@ The protocol exposes `presetFileExtension: 'json'` so **STORAGE → MIXER PRESET
 
 ## Dependency model
 
-- **npm deps** (`ws`, etc.): installed locally in this folder
-- **Sisyfos host API** (`store`, `mainClasses`, `logger`): resolved at runtime from `{SISYFOS_ROOT}/server/dist/server/src/` via `sisyfosHost.ts`
-
+-   **npm deps** (`ws`, etc.): installed locally in this folder
+-   **Sisyfos host API** (`store`, `mainClasses`, `logger`): resolved at runtime from `{SISYFOS_ROOT}/server/dist/server/src/` via `sisyfosHost.ts`

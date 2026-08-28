@@ -1,4 +1,3 @@
-
 export enum MixerConnectionTypes {
     'OSC' = 'OSC',
     'EMBER' = 'EMBER',
@@ -12,7 +11,7 @@ export enum MixerConnectionTypes {
     'StuderVista' = 'StuderVista',
     'vMix' = 'vMix',
     'Atem' = 'Atem',
-    'DHD' = 'DHD'
+    'DHD' = 'DHD',
 }
 
 export enum FxParam {

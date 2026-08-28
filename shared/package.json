@@ -1,13 +1,13 @@
 {
-  "name": "shared",
-  "private": true,
-  "version": "0.0.0",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^24",
-    "typescript": "^5.0.4"
-  },
-  "dependencies": {
-    "redux": "^5.0.1"
-  }
+    "name": "shared",
+    "private": true,
+    "version": "0.0.0",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/node": "^24",
+        "typescript": "^5.0.4"
+    },
+    "dependencies": {
+        "redux": "^5.0.1"
+    }
 }

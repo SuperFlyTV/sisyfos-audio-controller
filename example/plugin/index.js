@@ -1,34 +1,34 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const WebSocketMixerConnection_1 = require("./WebSocketMixerConnection");
+'use strict'
+Object.defineProperty(exports, '__esModule', { value: true })
+const WebSocketMixerConnection_1 = require('./WebSocketMixerConnection')
 /** Mirrors Sisyfos shared FxParam enum (0–21). */
-var FxParam;
-(function (FxParam) {
-    FxParam[FxParam["EqGain01"] = 0] = "EqGain01";
-    FxParam[FxParam["EqGain02"] = 1] = "EqGain02";
-    FxParam[FxParam["EqGain03"] = 2] = "EqGain03";
-    FxParam[FxParam["EqGain04"] = 3] = "EqGain04";
-    FxParam[FxParam["EqFreq01"] = 4] = "EqFreq01";
-    FxParam[FxParam["EqFreq02"] = 5] = "EqFreq02";
-    FxParam[FxParam["EqFreq03"] = 6] = "EqFreq03";
-    FxParam[FxParam["EqFreq04"] = 7] = "EqFreq04";
-    FxParam[FxParam["EqQ01"] = 8] = "EqQ01";
-    FxParam[FxParam["EqQ02"] = 9] = "EqQ02";
-    FxParam[FxParam["EqQ03"] = 10] = "EqQ03";
-    FxParam[FxParam["EqQ04"] = 11] = "EqQ04";
-    FxParam[FxParam["DelayTime"] = 12] = "DelayTime";
-    FxParam[FxParam["GainTrim"] = 13] = "GainTrim";
-    FxParam[FxParam["CompThrs"] = 14] = "CompThrs";
-    FxParam[FxParam["CompRatio"] = 15] = "CompRatio";
-    FxParam[FxParam["CompKnee"] = 16] = "CompKnee";
-    FxParam[FxParam["CompMakeUp"] = 17] = "CompMakeUp";
-    FxParam[FxParam["CompAttack"] = 18] = "CompAttack";
-    FxParam[FxParam["CompHold"] = 19] = "CompHold";
-    FxParam[FxParam["CompRelease"] = 20] = "CompRelease";
-    FxParam[FxParam["CompOnOff"] = 21] = "CompOnOff";
-})(FxParam || (FxParam = {}));
+var FxParam
+;(function (FxParam) {
+    FxParam[(FxParam['EqGain01'] = 0)] = 'EqGain01'
+    FxParam[(FxParam['EqGain02'] = 1)] = 'EqGain02'
+    FxParam[(FxParam['EqGain03'] = 2)] = 'EqGain03'
+    FxParam[(FxParam['EqGain04'] = 3)] = 'EqGain04'
+    FxParam[(FxParam['EqFreq01'] = 4)] = 'EqFreq01'
+    FxParam[(FxParam['EqFreq02'] = 5)] = 'EqFreq02'
+    FxParam[(FxParam['EqFreq03'] = 6)] = 'EqFreq03'
+    FxParam[(FxParam['EqFreq04'] = 7)] = 'EqFreq04'
+    FxParam[(FxParam['EqQ01'] = 8)] = 'EqQ01'
+    FxParam[(FxParam['EqQ02'] = 9)] = 'EqQ02'
+    FxParam[(FxParam['EqQ03'] = 10)] = 'EqQ03'
+    FxParam[(FxParam['EqQ04'] = 11)] = 'EqQ04'
+    FxParam[(FxParam['DelayTime'] = 12)] = 'DelayTime'
+    FxParam[(FxParam['GainTrim'] = 13)] = 'GainTrim'
+    FxParam[(FxParam['CompThrs'] = 14)] = 'CompThrs'
+    FxParam[(FxParam['CompRatio'] = 15)] = 'CompRatio'
+    FxParam[(FxParam['CompKnee'] = 16)] = 'CompKnee'
+    FxParam[(FxParam['CompMakeUp'] = 17)] = 'CompMakeUp'
+    FxParam[(FxParam['CompAttack'] = 18)] = 'CompAttack'
+    FxParam[(FxParam['CompHold'] = 19)] = 'CompHold'
+    FxParam[(FxParam['CompRelease'] = 20)] = 'CompRelease'
+    FxParam[(FxParam['CompOnOff'] = 21)] = 'CompOnOff'
+})(FxParam || (FxParam = {}))
 function fx(mixerMessage, meta = {}) {
-    return [{ mixerMessage, ...meta }];
+    return [{ mixerMessage, ...meta }]
 }
 const fxFromMixer = {
     [FxParam.EqGain01]: fx('fx/eq/1/g', {
@@ -178,24 +178,26 @@ const fxFromMixer = {
         maxLabel: 1,
         label: 'Comp On/Off',
     }),
-};
-const fxToMixer = Object.fromEntries(Object.entries(fxFromMixer).map(([key, messages]) => [
-    key,
-    messages.map(({ mixerMessage }) => ({ mixerMessage })),
-]));
+}
+const fxToMixer = Object.fromEntries(
+    Object.entries(fxFromMixer).map(([key, messages]) => [
+        key,
+        messages.map(({ mixerMessage }) => ({ mixerMessage })),
+    ])
+)
 const channelInputGain = fx('input/gain', {
     minLabel: -18,
     maxLabel: 18,
     label: 'Input Gain',
     valueLabel: ' dB',
-});
+})
 /** Matches mock device default `MOCK_INPUT_SELECTORS` (4). */
 const channelInputSelector = [
     { mixerMessage: 'input/selector/1', label: '1' },
     { mixerMessage: 'input/selector/2', label: '2' },
     { mixerMessage: 'input/selector/3', label: '3' },
     { mixerMessage: 'input/selector/4', label: '4' },
-];
+]
 const mockWebSocketProtocol = {
     label: 'Mock WebSocket Device',
     protocol: 'custom',
@@ -215,7 +217,9 @@ const mockWebSocketProtocol = {
             toMixer: {
                 ...fxToMixer,
                 CHANNEL_INPUT_GAIN: [{ mixerMessage: 'input/gain' }],
-                CHANNEL_INPUT_SELECTOR: channelInputSelector.map(({ mixerMessage, label }) => ({ mixerMessage, label })),
+                CHANNEL_INPUT_SELECTOR: channelInputSelector.map(
+                    ({ mixerMessage, label }) => ({ mixerMessage, label })
+                ),
                 CHANNEL_AMIX: [{ mixerMessage: 'amix/on' }],
                 AUX_LEVEL: [{ mixerMessage: 'aux/{argument}/level' }],
             },
@@ -234,13 +238,17 @@ const mockWebSocketProtocol = {
         test: 0.75,
     },
     presetFileExtension: 'json',
-};
+}
 module.exports = {
     Mixers: {
         mockWebSocket: {
             displayName: 'Mock WebSocket Device',
             protocol: mockWebSocketProtocol,
-            createConnection: (protocol, mixerIndex) => new WebSocketMixerConnection_1.WebSocketMixerConnection(protocol, mixerIndex),
+            createConnection: (protocol, mixerIndex) =>
+                new WebSocketMixerConnection_1.WebSocketMixerConnection(
+                    protocol,
+                    mixerIndex
+                ),
         },
     },
-};
+}

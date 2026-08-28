@@ -18,7 +18,10 @@ import {
     FairlightInputConfiguration,
 } from 'atem-connection/dist/enums'
 import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
-import { ChannelActions, ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
+import {
+    ChannelActions,
+    ChannelActionTypes,
+} from '../../../../shared/src/actions/channelActions'
 import { FairlightAudioSource } from 'atem-connection/dist/state/fairlight'
 import { Dispatch } from '@reduxjs/toolkit'
 import { MixerConnection } from '.'
@@ -476,4 +479,3 @@ export class AtemMixerConnection implements MixerConnection {
         if (update) global.mainThreadHandler.updatePartialStore(channelIndex)
     }
 }
-

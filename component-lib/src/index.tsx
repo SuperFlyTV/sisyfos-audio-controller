@@ -49,7 +49,5 @@ export type { Settings } from '../../shared/src/reducers/settingsReducer'
 export type { ReduxStore as LegacyReduxStore } from '../../shared/src/reducers/store'
 export type { Channels as LegacyChannels } from '../../shared/src/reducers/channelsReducer'
 export type { Faders as LegacyFaders } from '../../shared/src/reducers/fadersReducer'
-export type {
-    CustomPages as LegacyCustomPages,
-} from '../../shared/src/reducers/settingsReducer'
+export type { CustomPages as LegacyCustomPages } from '../../shared/src/reducers/settingsReducer'
 export type { SisyfosMeterConfig } from '../../client/src/components/SisyfosVuMeter'

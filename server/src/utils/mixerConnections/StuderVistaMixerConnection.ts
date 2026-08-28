@@ -9,15 +9,9 @@ import {
     MixerProtocol,
 } from '../../../../shared/src/constants/MixerProtocolInterface'
 import { logger } from '../logger'
-import {
-    SettingsActionTypes,
-} from '../../../../shared/src/actions/settingsActions'
-import {
-    FaderActionTypes,
-} from '../../../../shared/src/actions/faderActions'
-import {
-    ChannelActionTypes,
-} from '../../../../shared/src/actions/channelActions'
+import { SettingsActionTypes } from '../../../../shared/src/actions/settingsActions'
+import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
+import { ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
 import { remoteConnections } from '../../mainClasses'
 import {
     ChannelReference,
@@ -126,7 +120,10 @@ export class StuderVistaMixerConnection implements MixerConnection {
         }
     }
 
-    private findChannelInArray(channelType: number, channelTypeIndex: number): number {
+    private findChannelInArray(
+        channelType: number,
+        channelTypeIndex: number
+    ): number {
         let channelArrayIndex = 0
         state.channels[0].chMixerConnection[this.mixerIndex].channel.forEach(
             (channel: Channel, index: number) => {
@@ -152,7 +149,10 @@ export class StuderVistaMixerConnection implements MixerConnection {
         )
     }
 
-    private checkEmberCommand(message: string, protocolMessage: string): boolean {
+    private checkEmberCommand(
+        message: string,
+        protocolMessage: string
+    ): boolean {
         let messageArray = message.split('31 ')
         if (messageArray.length > 2) {
             let protocolArray = protocolMessage.split(' ')

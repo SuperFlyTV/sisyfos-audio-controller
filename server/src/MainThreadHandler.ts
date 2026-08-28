@@ -82,17 +82,15 @@ export class MainThreadHandlers {
         if (!faderObj) return
 
         socketServer.emit(IO.SOCKET_SET_STORE_FADER, {
-          faderIndex: faderIndex,
-          state: faderObj,
+            faderIndex: faderIndex,
+            state: faderObj,
         })
         faderObj.assignedChannels?.forEach((channel: ChannelReference) => {
-          socketServer.emit(IO.SOCKET_SET_STORE_CHANNEL, {
-            channelIndex: channel.channelIndex,
-            state:
-              state.channels[0].chMixerConnection[channel.mixerIndex].channel[
-                channel.channelIndex
-              ],
-          })
+            socketServer.emit(IO.SOCKET_SET_STORE_CHANNEL, {
+                channelIndex: channel.channelIndex,
+                state: state.channels[0].chMixerConnection[channel.mixerIndex]
+                    .channel[channel.channelIndex],
+            })
         })
     }
 

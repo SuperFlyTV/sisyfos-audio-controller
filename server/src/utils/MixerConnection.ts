@@ -38,7 +38,7 @@ export class MixerGenericConnection {
                 this.mixerConnection[index] = connection
             } else {
                 logger.error(
-                    `Failed to create mixer connection for preset "${presetKey}"`,
+                    `Failed to create mixer connection for preset "${presetKey}"`
                 )
             }
         })

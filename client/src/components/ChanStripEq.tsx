@@ -117,7 +117,12 @@ class ChanStripEq extends React.PureComponent<
         })
     }
 
-    handleDragCaptureEq(key: number, totalWidth: number, totalHeight: number, event: any) {
+    handleDragCaptureEq(
+        key: number,
+        totalWidth: number,
+        totalHeight: number,
+        event: any
+    ) {
         let eqFreqKey =
             FxParam[
                 String(FxParam[key]).replace(
@@ -143,7 +148,8 @@ class ChanStripEq extends React.PureComponent<
     }
     gainPositionToValue(position: number, totalHeight: number) {
         return (
-            (totalHeight * EQ_Y_SIZE - (position - totalHeight * EQ_Y_OFFSET)) / (totalHeight * EQ_Y_SIZE)
+            (totalHeight * EQ_Y_SIZE - (position - totalHeight * EQ_Y_OFFSET)) /
+            (totalHeight * EQ_Y_SIZE)
         )
     }
 
@@ -273,9 +279,7 @@ class ChanStripEq extends React.PureComponent<
                                 <div
                                     className="dot"
                                     style={{
-                                        color: String(
-                                            EqColors[FxParam[fxKey]]
-                                        ),
+                                        color: String(EqColors[FxParam[fxKey]]),
                                     }}
                                 >
                                     O

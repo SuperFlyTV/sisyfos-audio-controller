@@ -60,5 +60,5 @@ module.exports = {
 
 See also:
 
-- The working test fixture at `server/__tests__/fixtures/plugins/test-mixer/`.
-- The full runnable mock stack at `example/plugin/` (with mock device at `example/device/`). **Example-only — crude reference code for plugin integration, not a foundation to build on.**
+-   The working test fixture at `server/__tests__/fixtures/plugins/test-mixer/`.
+-   The full runnable mock stack at `example/plugin/` (with mock device at `example/device/`). **Example-only — crude reference code for plugin integration, not a foundation to build on.**

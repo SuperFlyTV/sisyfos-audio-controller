@@ -40,7 +40,7 @@ type MixerMessage = {
 
 function fx(
     mixerMessage: string,
-    meta: Omit<MixerMessage, 'mixerMessage'> = {},
+    meta: Omit<MixerMessage, 'mixerMessage'> = {}
 ): MixerMessage[] {
     return [{ mixerMessage, ...meta }]
 }
@@ -199,7 +199,7 @@ const fxToMixer: Record<number, MixerMessage[]> = Object.fromEntries(
     Object.entries(fxFromMixer).map(([key, messages]) => [
         key,
         messages.map(({ mixerMessage }) => ({ mixerMessage })),
-    ]),
+    ])
 )
 
 const channelInputGain = fx('input/gain', {
@@ -237,7 +237,7 @@ const mockWebSocketProtocol: MixerProtocolGeneric = {
                 ...fxToMixer,
                 CHANNEL_INPUT_GAIN: [{ mixerMessage: 'input/gain' }],
                 CHANNEL_INPUT_SELECTOR: channelInputSelector.map(
-                    ({ mixerMessage, label }) => ({ mixerMessage, label }),
+                    ({ mixerMessage, label }) => ({ mixerMessage, label })
                 ),
                 CHANNEL_AMIX: [{ mixerMessage: 'amix/on' }],
                 AUX_LEVEL: [{ mixerMessage: 'aux/{argument}/level' }],
@@ -266,7 +266,7 @@ module.exports = {
             protocol: mockWebSocketProtocol,
             createConnection: (
                 protocol: MixerProtocolGeneric,
-                mixerIndex: number,
+                mixerIndex: number
             ) => new WebSocketMixerConnection(protocol, mixerIndex),
         },
     },

@@ -22,14 +22,14 @@ export interface MixerConnection {
     updateAuxLevel(
         channelIndex: number,
         auxSendIndex: number,
-        level: number,
+        level: number
     ): void
     updateChannelName(channelIndex: number): void
     injectCommand(command: string[]): void
     updateChannelSetting(
         channelIndex: number,
         setting: string,
-        value: string,
+        value: string
     ): void
     updateFadeIOLevel(channelIndex: number, outputLevel: number): void
 }

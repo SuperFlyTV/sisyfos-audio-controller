@@ -28,7 +28,10 @@ export function getFaderLabel(faderIndex: number, defaultName = 'CH'): string {
         state.faders[0].fader[faderIndex].userLabel !== ''
             ? state.faders[0].fader[faderIndex].userLabel
             : undefined
-    const channelLabel = getChannelLabel(state.channels[0].chMixerConnection, faderIndex)
+    const channelLabel = getChannelLabel(
+        state.channels[0].chMixerConnection,
+        faderIndex
+    )
 
     switch (state.settings[0].labelType) {
         case 'automation':

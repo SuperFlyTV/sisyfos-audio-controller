@@ -377,7 +377,7 @@ describe('AutomationConnection', () => {
                 expect(mockUdpInstance.send).toHaveBeenCalledWith(
                     {
                         address: '/pong',
-                        args: [{type: 's', value: '12'}],
+                        args: [{ type: 's', value: '12' }],
                     },
                     '127.0.0.1',
                     5255
@@ -619,4 +619,3 @@ describe('AutomationConnection', () => {
         })
     })
 })
-

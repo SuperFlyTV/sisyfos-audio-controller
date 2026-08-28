@@ -46,10 +46,18 @@ export interface MixerConnection {
     updateAMixState(channelIndex: number, aMixOn: boolean): void
     updateNextAux(channelIndex: number, level: number): void
     updateFx(channelIndex: number, fxParam: FxParam, level: number): void
-    updateAuxLevel(channelIndex: number, auxSendIndex: number, level: number): void
+    updateAuxLevel(
+        channelIndex: number,
+        auxSendIndex: number,
+        level: number
+    ): void
     updateChannelName(channelIndex: number): void
     injectCommand(command: string[]): void
-    updateChannelSetting(channelIndex: number, setting: string, value: string): void
+    updateChannelSetting(
+        channelIndex: number,
+        setting: string,
+        value: string
+    ): void
     updateFadeIOLevel(channelIndex: number, outputLevel: number): void
 }
 ```
@@ -62,18 +70,18 @@ Reference implementation pattern: `OscMixerConnection` — especially incoming f
 
 The adapter needs one setting: the mock device WebSocket URL.
 
-| Setting | Example | Description |
-|---------|---------|-------------|
+| Setting     | Example               | Description                                                   |
+| ----------- | --------------------- | ------------------------------------------------------------- |
 | `deviceUrl` | `ws://localhost:8082` | WebSocket endpoint (exact key TBD in Sisyfos settings schema) |
 
 Future mixer preset key (suggested): `mockWebSocket`.
 
 Environment on the mock side:
 
-| Variable | Default |
-|----------|---------|
-| `WS_PORT` | `8082` |
-| `MOCK_CHANNELS` | `8` |
+| Variable        | Default |
+| --------------- | ------- |
+| `WS_PORT`       | `8082`  |
+| `MOCK_CHANNELS` | `8`     |
 
 Channel count in Sisyfos must match `MOCK_CHANNELS`, or the adapter must map indices explicitly.
 
@@ -85,9 +93,9 @@ Channel count in Sisyfos must match `MOCK_CHANNELS`, or the adapter must map ind
 2. **Wait** for `{ "type": "online" }`.
 3. **Subscribe** as a Sisyfos client:
 
-   ```json
-   { "type": "subscribe", "clientType": "sisyfos" }
-   ```
+    ```json
+    { "type": "subscribe", "clientType": "sisyfos" }
+    ```
 
 4. **Receive** `{ "type": "snapshot" }` — optional initial sync (Redux is usually authoritative; adapter may ignore snapshot and only push commands).
 5. **Listen** for feedback messages for the lifetime of the connection.
@@ -101,21 +109,21 @@ Optionally send periodic `{ "type": "ping" }` and expect `{ "type": "pong" }` fo
 
 The adapter translates method calls to WebSocket commands. **Do not** set `source` on outbound commands — the device defaults to `"command"`.
 
-| `MixerConnection` method | Device command | Mapping notes |
-|--------------------------|----------------|---------------|
-| `updateFadeIOLevel(ch, level)` | `setFaderLevel` | `level` is 0.0–1.0 output level |
-| `updateInputGain(ch, level)` | `setInputGain` | `level` is 0.0–1.0 input trim |
-| `updateInputSelector(ch, selected)` | `setInputSelector` | `selected` is 1-based input index |
-| `updateMuteState(ch, muteOn)` | `setMute` | Direct boolean map |
-| `updatePflState(ch)` | `setPfl` | Read current PFL from Redux; send `{ pfl: boolean }` |
-| `updateAMixState(ch, aMixOn)` | `setAMix` | Send `{ amixOn: boolean }` |
-| `updateNextAux(ch, level)` | `setNextAux` | `level` is 0.0–1.0 |
-| `updateAuxLevel(ch, auxIndex, level)` | `setAuxLevel` | `auxIndex` is 0-based; `level` is 0.0–1.0 |
-| `updateFx(ch, fxParam, level)` | `setFx` | `fxParam` is 0–21 (`FxParam` enum); `level` is 0.0–1.0 |
-| `updateChannelName(ch)` | `setChannelName` | Read label from Redux/store; send `{ name: string }` |
-| `loadMixerPreset(name)` | `loadMixerPreset` | Send `{ presetName: string }` — filename in device preset directory |
-| `injectCommand` | — | **No-op** |
-| `updateChannelSetting` | — | **No-op** |
+| `MixerConnection` method              | Device command     | Mapping notes                                                       |
+| ------------------------------------- | ------------------ | ------------------------------------------------------------------- |
+| `updateFadeIOLevel(ch, level)`        | `setFaderLevel`    | `level` is 0.0–1.0 output level                                     |
+| `updateInputGain(ch, level)`          | `setInputGain`     | `level` is 0.0–1.0 input trim                                       |
+| `updateInputSelector(ch, selected)`   | `setInputSelector` | `selected` is 1-based input index                                   |
+| `updateMuteState(ch, muteOn)`         | `setMute`          | Direct boolean map                                                  |
+| `updatePflState(ch)`                  | `setPfl`           | Read current PFL from Redux; send `{ pfl: boolean }`                |
+| `updateAMixState(ch, aMixOn)`         | `setAMix`          | Send `{ amixOn: boolean }`                                          |
+| `updateNextAux(ch, level)`            | `setNextAux`       | `level` is 0.0–1.0                                                  |
+| `updateAuxLevel(ch, auxIndex, level)` | `setAuxLevel`      | `auxIndex` is 0-based; `level` is 0.0–1.0                           |
+| `updateFx(ch, fxParam, level)`        | `setFx`            | `fxParam` is 0–21 (`FxParam` enum); `level` is 0.0–1.0              |
+| `updateChannelName(ch)`               | `setChannelName`   | Read label from Redux/store; send `{ name: string }`                |
+| `loadMixerPreset(name)`               | `loadMixerPreset`  | Send `{ presetName: string }` — filename in device preset directory |
+| `injectCommand`                       | —                  | **No-op**                                                           |
+| `updateChannelSetting`                | —                  | **No-op**                                                           |
 
 ### Example translations
 
@@ -133,8 +141,9 @@ ws.send(JSON.stringify({ type: 'setInputSelector', channel: 0, selected: 2 }))
 ws.send(JSON.stringify({ type: 'setMute', channel: 2, mute: true }))
 
 // updatePflState(1) — read Redux first
-const pflOn = /* fader.pflOn from store */
-ws.send(JSON.stringify({ type: 'setPfl', channel: 1, pfl: pflOn }))
+const pflOn =
+    /* fader.pflOn from store */
+    ws.send(JSON.stringify({ type: 'setPfl', channel: 1, pfl: pflOn }))
 
 // updateAMixState(0, true)
 ws.send(JSON.stringify({ type: 'setAMix', channel: 0, amixOn: true }))
@@ -143,17 +152,22 @@ ws.send(JSON.stringify({ type: 'setAMix', channel: 0, amixOn: true }))
 ws.send(JSON.stringify({ type: 'setNextAux', channel: 3, level: 0.25 }))
 
 // updateAuxLevel(0, 1, 0.5) — aux bus index 1
-ws.send(JSON.stringify({ type: 'setAuxLevel', channel: 0, auxIndex: 1, level: 0.5 }))
+ws.send(
+    JSON.stringify({ type: 'setAuxLevel', channel: 0, auxIndex: 1, level: 0.5 })
+)
 
 // updateFx(0, FxParam.DelayTime, 0.5)
 ws.send(JSON.stringify({ type: 'setFx', channel: 0, fxParam: 12, level: 0.5 }))
 
 // updateChannelName(0) — read label from store
-const name = /* channel label from store */
-ws.send(JSON.stringify({ type: 'setChannelName', channel: 0, name }))
+const name =
+    /* channel label from store */
+    ws.send(JSON.stringify({ type: 'setChannelName', channel: 0, name }))
 
 // loadMixerPreset('show-ready.json')
-ws.send(JSON.stringify({ type: 'loadMixerPreset', presetName: 'show-ready.json' }))
+ws.send(
+    JSON.stringify({ type: 'loadMixerPreset', presetName: 'show-ready.json' })
+)
 ```
 
 ---
@@ -164,26 +178,26 @@ All state-change feedback is broadcast. The adapter should handle messages where
 
 Feedback with `source === "command"` confirms state after an adapter-issued command. Ignore if Redux is already authoritative, or use for echo verification.
 
-| Feedback `type` | Condition | Sisyfos action |
-|-----------------|-----------|----------------|
-| `faderLevel` | `source: "hardware"` | Dispatch fader level update for `channel` |
-| `inputGain` | `source: "hardware"` | Dispatch input gain update for `channel` |
-| `inputSelector` | `source: "hardware"` | Dispatch input selector update for `channel` |
-| `mute` | `source: "hardware"` | Dispatch mute update for `channel` |
-| `pfl` | `source: "hardware"` | Dispatch PFL update for `channel` |
-| `amixOn` | `source: "hardware"` | Dispatch A-mix update for `channel` |
-| `nextAux` | `source: "hardware"` | Dispatch next-aux level for `channel` |
-| `auxLevel` | `source: "hardware"` | Dispatch aux send level for `channel` + `auxIndex` |
-| `fx` | `source: "hardware"` | Dispatch FX update for `channel` + `fxParam` |
-| `channelName` | `source: "hardware"` | Dispatch channel label for `channel` |
-| `presetLoaded` | any | Optional log/ack after preset recall (`presetName`) |
-| `vuLevel` | always | `sendVuLevel(channel, VuType.Channel, vuIndex ?? 0, level)` |
-| `faderLevel` | `source: "command"` | Optional echo verify; usually ignore |
-| `online` | — | Mark mixer online |
-| `snapshot` | — | Optional initial sync |
-| `clientStatus` | — | Ignore (UI concern) |
-| `error` | — | Log; connection stays open |
-| `pong` | — | Health check response |
+| Feedback `type` | Condition            | Sisyfos action                                              |
+| --------------- | -------------------- | ----------------------------------------------------------- |
+| `faderLevel`    | `source: "hardware"` | Dispatch fader level update for `channel`                   |
+| `inputGain`     | `source: "hardware"` | Dispatch input gain update for `channel`                    |
+| `inputSelector` | `source: "hardware"` | Dispatch input selector update for `channel`                |
+| `mute`          | `source: "hardware"` | Dispatch mute update for `channel`                          |
+| `pfl`           | `source: "hardware"` | Dispatch PFL update for `channel`                           |
+| `amixOn`        | `source: "hardware"` | Dispatch A-mix update for `channel`                         |
+| `nextAux`       | `source: "hardware"` | Dispatch next-aux level for `channel`                       |
+| `auxLevel`      | `source: "hardware"` | Dispatch aux send level for `channel` + `auxIndex`          |
+| `fx`            | `source: "hardware"` | Dispatch FX update for `channel` + `fxParam`                |
+| `channelName`   | `source: "hardware"` | Dispatch channel label for `channel`                        |
+| `presetLoaded`  | any                  | Optional log/ack after preset recall (`presetName`)         |
+| `vuLevel`       | always               | `sendVuLevel(channel, VuType.Channel, vuIndex ?? 0, level)` |
+| `faderLevel`    | `source: "command"`  | Optional echo verify; usually ignore                        |
+| `online`        | —                    | Mark mixer online                                           |
+| `snapshot`      | —                    | Optional initial sync                                       |
+| `clientStatus`  | —                    | Ignore (UI concern)                                         |
+| `error`         | —                    | Log; connection stays open                                  |
+| `pong`          | —                    | Health check response                                       |
 
 ### Hardware feedback flow
 
@@ -287,7 +301,12 @@ The device emits `vuLevel` messages on a timer — no Sisyfos command required. 
 import { VuType } from '../../../shared/src/utils/vu-server-types'
 
 // inbound: { type: 'vuLevel', channel: 0, level: 0.62, vuIndex: 0 }
-sendVuLevel(message.channel, VuType.Channel, message.vuIndex ?? 0, message.level)
+sendVuLevel(
+    message.channel,
+    VuType.Channel,
+    message.vuIndex ?? 0,
+    message.level
+)
 ```
 
 Levels are a simulated sine wave with per-channel phase offset. Muted channels stream `0`.
@@ -300,17 +319,17 @@ Maps directly. Used when Sisyfos drives the next-aux send preview level.
 
 ## Implementation checklist
 
-- [ ] Create `WebSocketMixerConnection` implementing `MixerConnection`
-- [ ] Read `deviceUrl` from mixer settings
-- [ ] Connect WebSocket on construction / mixer enable
-- [ ] On `open`: wait for `online`, send `subscribe` with `clientType: "sisyfos"`
-- [ ] Implement outbound mapping for the eleven supported methods (table above)
-- [ ] No-op stub for all other `MixerConnection` methods
-- [ ] Parse inbound JSON; route `source: "hardware"` feedback to Redux dispatches
-- [ ] Set mixer online on connect; offline on close (see `OscMixerConnection` `SET_MIXER_ONLINE`)
-- [ ] Reconnect with backoff on unexpected close
-- [ ] Optional: `ping`/`pong` keepalive
-- [ ] Register in mixer connection factory alongside OSC, vMix, etc.
+-   [ ] Create `WebSocketMixerConnection` implementing `MixerConnection`
+-   [ ] Read `deviceUrl` from mixer settings
+-   [ ] Connect WebSocket on construction / mixer enable
+-   [ ] On `open`: wait for `online`, send `subscribe` with `clientType: "sisyfos"`
+-   [ ] Implement outbound mapping for the eleven supported methods (table above)
+-   [ ] No-op stub for all other `MixerConnection` methods
+-   [ ] Parse inbound JSON; route `source: "hardware"` feedback to Redux dispatches
+-   [ ] Set mixer online on connect; offline on close (see `OscMixerConnection` `SET_MIXER_ONLINE`)
+-   [ ] Reconnect with backoff on unexpected close
+-   [ ] Optional: `ping`/`pong` keepalive
+-   [ ] Register in mixer connection factory alongside OSC, vMix, etc.
 
 ---
 
@@ -340,8 +359,8 @@ yarn test
 
 The mock does not support these Sisyfos features — adapter methods should no-op:
 
-- Inject command, channel settings
-- Authentication
+-   Inject command, channel settings
+-   Authentication
 
 Sending unsupported command types to the mock returns `{ "type": "error", ... }`.
 
@@ -349,6 +368,6 @@ Sending unsupported command types to the mock returns `{ "type": "error", ... }`
 
 ## Related docs
 
-- **[internal-api.md](internal-api.md)** — full WebSocket message reference
-- **Sisyfos `MixerConnection`** — `server/src/utils/mixerConnections/index.ts`
-- **OSC reference** — `server/src/utils/mixerConnections/OscMixerConnection.ts`
+-   **[internal-api.md](internal-api.md)** — full WebSocket message reference
+-   **Sisyfos `MixerConnection`** — `server/src/utils/mixerConnections/index.ts`
+-   **OSC reference** — `server/src/utils/mixerConnections/OscMixerConnection.ts`

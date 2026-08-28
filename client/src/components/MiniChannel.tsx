@@ -88,7 +88,7 @@ const mapStateToProps = (state: any, props: any): ChannelInjectProps => {
         channelType: 0 /* TODO: state.channels[0].channel[props.channelIndex].channelType, */,
         channelTypeIndex:
             props.faderIndex /* TODO: state.channels[0].chMixerConnection[0].channel[props.channelIndex].channelTypeIndex, */,
-        label: getFaderLabel(props.faderIndex)
+        label: getFaderLabel(props.faderIndex),
     }
 }
 

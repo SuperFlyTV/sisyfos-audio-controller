@@ -1,7 +1,5 @@
 import { createEnhancedReducer } from '../../shared/src/reducers/indexReducer'
-import {
-    SettingsActionTypes,
-} from '../../shared/src/actions/settingsActions'
+import { SettingsActionTypes } from '../../shared/src/actions/settingsActions'
 
 import fs from 'fs'
 const parsedFullStoreJSON = fs.readFileSync(

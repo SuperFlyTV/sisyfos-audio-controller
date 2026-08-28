@@ -69,6 +69,4 @@ const mapStateToProps = (state: any): ChannelsInjectProps => {
     }
 }
 
-export default connect<ChannelsInjectProps, any, any>(mapStateToProps)(
-    Channels
-)
+export default connect<ChannelsInjectProps, any, any>(mapStateToProps)(Channels)

@@ -8,9 +8,7 @@ import {
     FxParam,
     MixerProtocol,
 } from '../../../../shared/src/constants/MixerProtocolInterface'
-import {
-    FaderActionTypes,
-} from '../../../../shared/src/actions/faderActions'
+import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
 import { logger } from '../logger'
 import { MixerConnection } from '.'
 

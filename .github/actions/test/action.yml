@@ -1,19 +1,19 @@
-name: "Test"
-description: "Test"
+name: 'Test'
+description: 'Test'
 runs:
-  using: "composite"
-  steps:
-    - name: Clean and cache setup
-      uses: ./.github/actions/cache
-    
-    - name: Update Lockfile
-      shell: bash
-      run: yarn install --mode=update-lockfile
-      
-    - name: Install dependencies
-      shell: bash
-      run: yarn install --mode=skip-build
-      
-    - name: Run tests
-      shell: bash
-      run: yarn test
+    using: 'composite'
+    steps:
+        - name: Clean and cache setup
+          uses: ./.github/actions/cache
+
+        - name: Update Lockfile
+          shell: bash
+          run: yarn install --mode=update-lockfile
+
+        - name: Install dependencies
+          shell: bash
+          run: yarn install --mode=skip-build
+
+        - name: Run tests
+          shell: bash
+          run: yarn test

@@ -57,6 +57,6 @@ export SISYFOS_ROOT="/path/to/sisyfos-audio-controller"
 
 ## More detail
 
-- [plugin/README.md](plugin/README.md) — plugin setup, supported MixerConnection methods
-- [device/README.md](device/README.md) — device WebSocket API, env vars
-- [Docs/example-mixer-plugin/README.md](../Docs/example-mixer-plugin/README.md) — minimal plugin skeleton
+-   [plugin/README.md](plugin/README.md) — plugin setup, supported MixerConnection methods
+-   [device/README.md](device/README.md) — device WebSocket API, env vars
+-   [Docs/example-mixer-plugin/README.md](../Docs/example-mixer-plugin/README.md) — minimal plugin skeleton

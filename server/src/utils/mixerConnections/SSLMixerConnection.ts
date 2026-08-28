@@ -8,15 +8,9 @@ import {
     FxParam,
     MixerProtocol,
 } from '../../../../shared/src/constants/MixerProtocolInterface'
-import {
-    ChannelActionTypes,
-} from '../../../../shared/src/actions/channelActions'
-import {
-    FaderActionTypes,
-} from '../../../../shared/src/actions/faderActions'
-import {
-    SettingsActionTypes,
-} from '../../../../shared/src/actions/settingsActions'
+import { ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
+import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
+import { SettingsActionTypes } from '../../../../shared/src/actions/settingsActions'
 import { logger } from '../logger'
 import {
     ChannelReference,

@@ -32,7 +32,8 @@ export function useSocketConnection(
         })
 
         const { pathname, host } = window.location
-        const socketServerPath = customPath ??
+        const socketServerPath =
+            customPath ??
             pathname + (pathname.endsWith('/') ? '' : '/') + 'socket.io/'
         const uri = customUri ?? host
 
@@ -47,7 +48,10 @@ export function useSocketConnection(
         window.socketIoClient.emit(SOCKET_GET_MIXER_PRESET_LIST)
 
         console.log('Setting up SocketIO connection ' + socketServerPath)
-        window.socketIoClient.emit('get-mixerprotocol', 'get selected mixerprotocol')
+        window.socketIoClient.emit(
+            'get-mixerprotocol',
+            'get selected mixerprotocol'
+        )
         window.socketIoClient.emit('get-store', 'update local store')
         window.socketIoClient.emit('get-settings', 'update local settings')
         window.socketIoClient.emit(SOCKET_GET_PAGES_LIST)

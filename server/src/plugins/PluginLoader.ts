@@ -10,7 +10,9 @@ import { logger } from '../utils/logger'
 
 const PLUGIN_PATH_ARG_NAMES = ['--plugin-path', '--sisyfos-plugin-path']
 
-export function getPluginPathsFromArgv(argv: string[] = process.argv): string[] {
+export function getPluginPathsFromArgv(
+    argv: string[] = process.argv
+): string[] {
     const paths: string[] = []
     const args = argv.slice(2)
 
@@ -53,21 +55,23 @@ function readManifest(pluginDir: string): MixerPluginManifest | undefined {
 
         if (!manifest.id || !manifest.mixers) {
             logger.error(
-                `Invalid plugin manifest in ${pluginDir}: requires id and mixers`,
+                `Invalid plugin manifest in ${pluginDir}: requires id and mixers`
             )
             return undefined
         }
 
         return manifest
     } catch (error) {
-        logger.data(error).error(`Failed to read plugin manifest in ${pluginDir}`)
+        logger
+            .data(error)
+            .error(`Failed to read plugin manifest in ${pluginDir}`)
         return undefined
     }
 }
 
 function loadPluginDirectory(
     pluginDir: string,
-    registry: MixerRegistry,
+    registry: MixerRegistry
 ): boolean {
     logger.info(`Checking plugin directory: ${pluginDir}`)
 
@@ -78,13 +82,13 @@ function loadPluginDirectory(
     }
 
     logger.info(
-        `Found plugin manifest "${manifest.id}" v${manifest.version ?? '?'} in ${pluginDir}`,
+        `Found plugin manifest "${manifest.id}" v${manifest.version ?? '?'} in ${pluginDir}`
     )
 
     const entryPath = path.join(pluginDir, 'index.js')
     if (!fs.existsSync(entryPath)) {
         logger.error(
-            `Plugin "${manifest.id}" in ${pluginDir} is missing index.js`,
+            `Plugin "${manifest.id}" in ${pluginDir} is missing index.js`
         )
         return false
     }
@@ -95,14 +99,14 @@ function loadPluginDirectory(
         const pluginModule = require(entryPath) as MixerPluginModule
         if (!pluginModule?.Mixers) {
             logger.error(
-                `Plugin "${manifest.id}" in ${pluginDir} must export { Mixers: ... }`,
+                `Plugin "${manifest.id}" in ${pluginDir} must export { Mixers: ... }`
             )
             return false
         }
 
         const presetKeys = Object.keys(manifest.mixers)
         logger.info(
-            `Registering plugin "${manifest.id}" presets: ${presetKeys.join(', ')}`,
+            `Registering plugin "${manifest.id}" presets: ${presetKeys.join(', ')}`
         )
         registry.registerPlugin(manifest, pluginDir, pluginModule.Mixers)
         logger.info(`Loaded mixer plugin "${manifest.id}" from ${pluginDir}`)
@@ -128,10 +132,10 @@ export function loadPlugins(registry: MixerRegistry = mixerRegistry): void {
 
     logger.info('Loading mixer plugins...')
     logger.info(
-        `Plugin paths from CLI: ${argvPaths.length ? argvPaths.join(', ') : '(none)'}`,
+        `Plugin paths from CLI: ${argvPaths.length ? argvPaths.join(', ') : '(none)'}`
     )
     logger.info(
-        `Plugin paths from SISYFOS_PLUGIN_PATH: ${envPaths.length ? envPaths.join(', ') : '(none)'}`,
+        `Plugin paths from SISYFOS_PLUGIN_PATH: ${envPaths.length ? envPaths.join(', ') : '(none)'}`
     )
     logger.info(`Plugin storage folder: ${PLUGINS_FOLDER}`)
 
@@ -140,7 +144,7 @@ export function loadPlugins(registry: MixerRegistry = mixerRegistry): void {
     for (const searchPath of searchPaths) {
         if (!fs.existsSync(searchPath)) {
             logger.info(
-                `Skipping plugin search path (not found): ${searchPath}`,
+                `Skipping plugin search path (not found): ${searchPath}`
             )
             continue
         }
@@ -157,17 +161,19 @@ export function loadPlugins(registry: MixerRegistry = mixerRegistry): void {
 
         const pluginDirs = entries.filter((entry) => entry.isDirectory())
         logger.info(
-            `Found ${pluginDirs.length} director${pluginDirs.length === 1 ? 'y' : 'ies'} in ${searchPath}`,
+            `Found ${pluginDirs.length} director${pluginDirs.length === 1 ? 'y' : 'ies'} in ${searchPath}`
         )
 
         for (const entry of pluginDirs) {
-            if (loadPluginDirectory(path.join(searchPath, entry.name), registry)) {
+            if (
+                loadPluginDirectory(path.join(searchPath, entry.name), registry)
+            ) {
                 loadedCount++
             }
         }
     }
 
     logger.info(
-        `Mixer plugin loading complete (${loadedCount} plugin${loadedCount === 1 ? '' : 's'} loaded)`,
+        `Mixer plugin loading complete (${loadedCount} plugin${loadedCount === 1 ? '' : 's'} loaded)`
     )
 }

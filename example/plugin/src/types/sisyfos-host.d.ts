@@ -94,7 +94,7 @@ export interface MixerGenericConnection {
     updateOutLevel: (
         faderIndex: number,
         delay: number,
-        skipMixerIndex: number,
+        skipMixerIndex: number
     ) => void
     updateMuteState: (faderIndex: number, mixerIndex: number) => void
 }

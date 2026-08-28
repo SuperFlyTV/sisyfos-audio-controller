@@ -8,8 +8,8 @@
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "declaration": false
+        "declaration": false,
     },
     "include": ["src/**/*"],
-    "exclude": ["node_modules"]
+    "exclude": ["node_modules"],
 }

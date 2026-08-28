@@ -12,7 +12,7 @@ export interface MixerPluginManifest {
 
 export type MixerConnectionFactory = (
     protocol: MixerProtocolGeneric,
-    mixerIndex: number,
+    mixerIndex: number
 ) => unknown
 
 export interface MixerPluginEntry {

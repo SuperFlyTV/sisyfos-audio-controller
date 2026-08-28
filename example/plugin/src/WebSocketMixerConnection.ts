@@ -397,10 +397,7 @@ export class WebSocketMixerConnection {
         global.mainThreadHandler.updatePartialStore(assignedFaderIndex)
     }
 
-    private handleHardwareInputGain(
-        channelIndex: number,
-        level: number
-    ): void {
+    private handleHardwareInputGain(channelIndex: number, level: number): void {
         const { store } = getSisyfosHost().store
         const assignedFaderIndex = this.getAssignedFaderIndex(channelIndex)
         if (assignedFaderIndex < 0) {
@@ -769,7 +766,6 @@ export class WebSocketMixerConnection {
         presetName: string,
         logger: { info: (msg: string) => void; error: (msg: string) => void }
     ): void {
-
         let presetPath: string
         try {
             presetPath = this.resolvePresetPath(presetName)
@@ -864,8 +860,7 @@ export class WebSocketMixerConnection {
                 typeof channel.inputSelector === 'number'
                     ? channel.inputSelector
                     : undefined,
-            mute:
-                typeof channel.mute === 'boolean' ? channel.mute : undefined,
+            mute: typeof channel.mute === 'boolean' ? channel.mute : undefined,
             pfl: typeof channel.pfl === 'boolean' ? channel.pfl : undefined,
             amixOn:
                 typeof channel.amixOn === 'boolean'
@@ -1135,8 +1130,7 @@ function getSendVuLevel(): SendVuLevel {
         return cachedSendVuLevel
     }
 
-    const root =
-        process.env.SISYFOS_ROOT ?? path.resolve(__dirname, '../..')
+    const root = process.env.SISYFOS_ROOT ?? path.resolve(__dirname, '../..')
     const serverDist = path.join(root, 'server/dist/server/src')
     cachedSendVuLevel = require(path.join(serverDist, 'utils/vuServer'))
         .sendVuLevel as SendVuLevel

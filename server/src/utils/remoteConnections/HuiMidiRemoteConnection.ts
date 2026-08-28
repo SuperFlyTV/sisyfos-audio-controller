@@ -3,9 +3,7 @@ import WebMidi from 'webmidi'
 import { store, state } from '../../reducers/store'
 import { mixerGenericConnection } from '../../mainClasses'
 
-import {
-    FaderActionTypes,
-} from '../../../../shared/src/actions/faderActions'
+import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
 
 //Utils:
 import {

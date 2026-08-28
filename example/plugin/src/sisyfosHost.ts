@@ -8,8 +8,7 @@ export function getSisyfosHost(): SisyfosHostModules {
         return cachedHost
     }
 
-    const root =
-        process.env.SISYFOS_ROOT ?? path.resolve(__dirname, '../..')
+    const root = process.env.SISYFOS_ROOT ?? path.resolve(__dirname, '../..')
     const serverDist = path.join(root, 'server/dist/server/src')
 
     cachedHost = {

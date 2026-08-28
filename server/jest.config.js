@@ -1,6 +1,5 @@
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  testPathIgnorePatterns: ['/node_modules/', '/fixtures/'],
-};
-
+    preset: 'ts-jest',
+    testEnvironment: 'node',
+    testPathIgnorePatterns: ['/node_modules/', '/fixtures/'],
+}

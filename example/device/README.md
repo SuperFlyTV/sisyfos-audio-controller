@@ -11,9 +11,9 @@ yarn install
 yarn dev
 ```
 
-- **Web UI (dev):** http://localhost:5173
-- **Web UI (production):** http://localhost:8081
-- **WebSocket API:** ws://localhost:8082
+-   **Web UI (dev):** http://localhost:5173
+-   **Web UI (production):** http://localhost:8081
+-   **WebSocket API:** ws://localhost:8082
 
 ```bash
 yarn build
@@ -54,9 +54,9 @@ npx wscat -c ws://localhost:8082
 
 The UI connects with `{ "type": "subscribe", "clientType": "ui" }`. Sisyfos (or wscat) should use `{ "type": "subscribe" }` or `{ "type": "subscribe", "clientType": "sisyfos" }`. The status bar shows both UI and Sisyfos connection state.
 
-- Displays channel strips with fader, mute, PFL, aux sends, next-aux (read-only), editable name, and preset loader
-- Manual UI changes send commands with `source: "hardware"`
-- Shows a scrollable message log of the last 50 inbound/outbound messages
+-   Displays channel strips with fader, mute, PFL, aux sends, next-aux (read-only), editable name, and preset loader
+-   Manual UI changes send commands with `source: "hardware"`
+-   Shows a scrollable message log of the last 50 inbound/outbound messages
 
 Set `VITE_WS_URL` when building the UI to override the default WebSocket URL.
 
@@ -75,15 +75,14 @@ yarn test
 
 ## Protocol commands
 
-- `setFaderLevel`, `setInputGain`, `setInputSelector`, `setMute`, `setPfl`, `setAMix`, `setNextAux`, `setAuxLevel`, `setChannelName`, `setFx`, `loadMixerPreset`
-- `subscribe`, `resetAll`, `ping`
+-   `setFaderLevel`, `setInputGain`, `setInputSelector`, `setMute`, `setPfl`, `setAMix`, `setNextAux`, `setAuxLevel`, `setChannelName`, `setFx`, `loadMixerPreset`
+-   `subscribe`, `resetAll`, `ping`
 
 `setFx` supports all 22 Sisyfos `FxParam` values (EQ, delay, compressor, gain trim) as normalized 0.0–1.0 levels.
 
-- Simulated VU meters (sine wave, per-channel phase offset) streamed over WebSocket
+-   Simulated VU meters (sine wave, per-channel phase offset) streamed over WebSocket
 
 ## Out of scope (v1)
 
-- Inject command / channel settings
-- Authentication
-
+-   Inject command / channel settings
+-   Authentication

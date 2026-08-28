@@ -51,7 +51,7 @@ const migrate45to47 = (currentSettings: Settings): Settings => {
                 delete stateFromShot.channelState.channel
             }
             let migratedShot: ShotStorage = stateFromShot
-            
+
             fs.writeFileSync(
                 path.join(STORAGE_FOLDER, fileName),
                 JSON.stringify(migratedShot),

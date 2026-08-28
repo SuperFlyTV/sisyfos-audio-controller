@@ -15,9 +15,9 @@ For Sisyfos-specific integration (`MixerConnection` mapping, Redux feedback), se
 
 The mock device holds in-memory channel state and:
 
-- Accepts **commands** from clients
-- Pushes **feedback** on every state change (broadcast to all connected clients)
-- Does **not** implement PGM/PST, automation, or mixer-specific logic — that lives in clients
+-   Accepts **commands** from clients
+-   Pushes **feedback** on every state change (broadcast to all connected clients)
+-   Does **not** implement PGM/PST, automation, or mixer-specific logic — that lives in clients
 
 ```mermaid
 sequenceDiagram
@@ -555,7 +555,6 @@ List available preset filenames:
 
 Unsupported commands return `{ "type": "error", ... }`:
 
-- Inject command
-- Authentication
-- Runtime channel count changes
-
+-   Inject command
+-   Authentication
+-   Runtime channel count changes

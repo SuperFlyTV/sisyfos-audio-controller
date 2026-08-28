@@ -13,17 +13,13 @@ import {
     FxParam,
 } from '../../../../shared/src/constants/MixerProtocolInterface'
 import { Channel } from '../../../../shared/src/reducers/channelsReducer'
-import {
-    ChannelActionTypes,
-} from '../../../../shared/src/actions/channelActions'
+import { ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
 import { logger } from '../logger'
 import { dbToFloat, floatToDB } from './LawoRubyConnection'
 import { Fader } from '../../../../shared/src/reducers/fadersReducer'
 import { sendVuLevel } from '../vuServer'
 import { VuType } from '../../../../shared/src/utils/vu-server-types'
-import {
-    SettingsActionTypes,
-} from '../../../../shared/src/actions/settingsActions'
+import { SettingsActionTypes } from '../../../../shared/src/actions/settingsActions'
 import { STORAGE_FOLDER } from '../SettingsStorage'
 import { MixerConnection } from '.'
 
@@ -362,7 +358,10 @@ export class CasparCGConnection implements MixerConnection {
             })
     }
 
-    private setAllLayers = (pairs: CasparCGChannelLayerPair[], value: number) => {
+    private setAllLayers = (
+        pairs: CasparCGChannelLayerPair[],
+        value: number
+    ) => {
         pairs.forEach((i) => {
             this.controlVolume(i.channel, i.layer, value)
         })

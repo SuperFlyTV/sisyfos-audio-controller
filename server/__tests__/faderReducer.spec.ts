@@ -192,9 +192,9 @@ describe('Test redux faderReducers actions', () => {
         }
 
         parsedFullStore = JSON.parse(parsedFullStoreJSON)
-        expect(
-            reducer(newState, { type: FaderActionTypes.CLEAR_PST })
-        ).toEqual(parsedFullStore)
+        expect(reducer(newState, { type: FaderActionTypes.CLEAR_PST })).toEqual(
+            parsedFullStore
+        )
     })
 
     /**
