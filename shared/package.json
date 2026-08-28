@@ -1,8 +1,49 @@
 {
-    "name": "shared",
+    "name": "@Sofie-Automation/sisyfos-audio-controller-shared-lib",
     "private": true,
     "version": "0.0.0",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Sofie-Automation/sisyfos-audio-controller.git"
+    },
+    "bugs": {
+        "url": "https://github.com/Sofie-Automation/sisyfos-audio-controller/issues"
+    },
+    "homepage": "https://github.com/Sofie-Automation/sisyfos-audio-controller#readme",
+    "contributors": [
+        {
+            "name": "Kasper Olsson Hans",
+            "email": "github@olzzon.dk"
+        },
+        {
+            "name": "Mint de Wit",
+            "email": "mint@superfly.tv",
+            "url": "https://superfly.tv"
+        },
+        {
+            "name": "Jan Starzak",
+            "email": "jan@superfly.tv",
+            "url": "https://superfly.tv"
+        },
+        {
+            "name": "Anders Frederik Jørgensen",
+            "email": "afjo@tv2.dk"
+        }
+    ],
+    "engines": {
+        "node": ">=24",
+        "yarn": ">=4.1.0"
+    },
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "/dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc --watch"
+    },
     "devDependencies": {
         "@types/node": "^24",
         "typescript": "^5.0.4"
