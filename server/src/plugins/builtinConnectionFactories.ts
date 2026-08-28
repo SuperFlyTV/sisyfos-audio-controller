@@ -1,7 +1,7 @@
 import {
     MixerProtocolGeneric,
     MixerConnectionTypes,
-} from '../../../shared/src/constants/MixerProtocolInterface'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { MixerConnection } from '../utils/mixerConnections'
 import { logger } from '../utils/logger'
 

@@ -25,6 +25,17 @@ export * from './constants/mixerProtocols/reaperMaster'
 export * from './constants/mixerProtocols/vMix'
 export * from './constants/mixerProtocols/yamahaQLCL'
 export * from './constants/remoteProtocols/HuiRemoteFaderPresets'
+export {
+    RawReceiveTypes,
+    RawSendTypes,
+    RemoteFaderPresets as SkaarhojRemoteFaderPresets,
+    RemoteFaderProtocolList as SkaarhojRemoteFaderProtocolList,
+} from './constants/remoteProtocols/SkaarhojProtocol'
+export type {
+    RawReceiveMessage,
+    RawSendMessage,
+    RemoteProtocol as SkaarhojRemoteProtocol,
+} from './constants/remoteProtocols/SkaarhojProtocol'
 export * as SkaarhojProtocol from './constants/remoteProtocols/SkaarhojProtocol'
 export * from './reducers/channelsReducer'
 export * from './reducers/fadersReducer'

@@ -1,5 +1,5 @@
 import path from 'path'
-import { MixerProtocolPresets } from '../../shared/src/constants/MixerProtocolPresets'
+import { MixerProtocolPresets } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { MixerRegistry } from '../src/plugins/MixerRegistry'
 import {
     getPluginPathsFromArgv,

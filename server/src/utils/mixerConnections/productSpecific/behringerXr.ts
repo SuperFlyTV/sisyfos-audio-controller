@@ -1,6 +1,6 @@
 import { state } from '../../../reducers/store'
 import { sendVuLevel } from '../../vuServer'
-import { VuType } from '../../../../../shared/src/utils/vu-server-types'
+import { VuType } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 
 const DATA_OFFSET = 4
 

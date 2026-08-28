@@ -35,8 +35,19 @@
         "node": ">=24",
         "yarn": ">=4.1.0"
     },
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
+    "main": "dist/shared/src/index.js",
+    "types": "dist/shared/src/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/shared/src/index.d.ts",
+            "import": "./dist/shared/src/index.js",
+            "require": "./dist/shared/src/index.js"
+        },
+        "./*": {
+            "types": "./dist/shared/src/*.d.ts",
+            "require": "./dist/shared/src/*.js"
+        }
+    },
     "files": [
         "/dist"
     ],
@@ -49,6 +60,7 @@
         "typescript": "^5.0.4"
     },
     "dependencies": {
+        "@tv2media/logger": "^2.0.2",
         "redux": "^5.0.1"
     }
 }

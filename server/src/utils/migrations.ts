@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 
 import { logger } from './logger'
-import { Settings } from '../../../shared/src/reducers/settingsReducer'
+import { Settings } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { getSnapShotList, ShotStorage, STORAGE_FOLDER } from './SettingsStorage'
 
 const version = process.env.npm_package_version

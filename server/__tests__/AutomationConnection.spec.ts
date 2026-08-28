@@ -60,12 +60,12 @@ jest.mock('osc', () => ({
 }))
 
 import { EventEmitter } from 'events'
-import { ChannelActionTypes } from '../../shared/src/actions/channelActions'
-import { FaderActionTypes } from '../../shared/src/actions/faderActions'
-import { SettingsActionTypes } from '../../shared/src/actions/settingsActions'
-import { defaultChannelsReducerState } from '../../shared/src/reducers/channelsReducer'
-import { defaultFadersReducerState } from '../../shared/src/reducers/fadersReducer'
-import { defaultSettingsReducerState } from '../../shared/src/reducers/settingsReducer'
+import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { defaultChannelsReducerState } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { defaultFadersReducerState } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { defaultSettingsReducerState } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { store } from '../src/reducers/store'
 import { AutomationConnection } from '../src/utils/AutomationConnection'
 import osc from 'osc'

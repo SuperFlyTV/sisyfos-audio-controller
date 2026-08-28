@@ -1,5 +1,5 @@
-import { FaderActionTypes } from '../../shared/src/actions/faderActions'
-import { ChannelActionTypes } from '../../shared/src/actions/channelActions'
+import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 
 const mockDispatch = jest.fn()
 const mockSendVuLevel = jest.fn()

@@ -7,17 +7,17 @@ import net from 'net'
 import {
     FxParam,
     MixerProtocol,
-} from '../../../../shared/src/constants/MixerProtocolInterface'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
-import { SettingsActionTypes } from '../../../../shared/src/actions/settingsActions'
-import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
-import { ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
+import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { remoteConnections } from '../../mainClasses'
 import {
     ChannelReference,
     Fader,
-} from '../../../../shared/src/reducers/fadersReducer'
-import { Channel } from '../../../../shared/src/reducers/channelsReducer'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { Channel } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { MixerConnection } from '.'
 
 export class StuderVistaMixerConnection implements MixerConnection {

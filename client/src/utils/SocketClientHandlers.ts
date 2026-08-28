@@ -1,9 +1,9 @@
-import { FaderActionTypes } from '../../../shared/src/actions/faderActions'
+import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import {
     ChannelActions,
     ChannelActionTypes,
-} from '../../../shared/src/actions/channelActions'
-import { SettingsActionTypes } from '../../../shared/src/actions/settingsActions'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import {
     SOCKET_RETURN_SNAPSHOT_LIST,
     SOCKET_SET_FULL_STORE,
@@ -13,13 +13,13 @@ import {
     SOCKET_SET_MIXER_ONLINE,
     SOCKET_RETURN_MIXER_PRESET_LIST,
     SOCKET_RETURN_PAGES_LIST,
-} from '../../../shared/src/constants/SOCKET_IO_DISPATCHERS'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import {
     ChMixerConnection,
     NumberOfChannels,
-} from '../../../shared/src/reducers/channelsReducer'
-import { VuType } from '../../../shared/src/utils/vu-server-types'
-import { MixerSettings } from '../../../shared/src/reducers/settingsReducer'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { VuType } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { MixerSettings } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import type { Store } from 'redux'
 import { getSisyfosReduxState } from './labels'
 

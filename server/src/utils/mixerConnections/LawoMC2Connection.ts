@@ -8,21 +8,21 @@ import fs from 'fs'
 import {
     FxParam,
     MixerProtocol,
-} from '../../../../shared/src/constants/MixerProtocolInterface'
-import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
 import { dbToFloat, floatToDB } from './LawoRubyConnection'
-import { ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
-import { SettingsActionTypes } from '../../../../shared/src/actions/settingsActions'
+import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import {
     ChannelReference,
     Fader,
-} from '../../../../shared/src/reducers/fadersReducer'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { EmberElement, NumberedTreeNode } from 'emberplus-connection/dist/model'
 import { STORAGE_FOLDER } from '../SettingsStorage'
 import { MixerConnection } from '.'
 import { sendVuLevel } from '../vuServer'
-import { VuType } from '../../../../shared/src/utils/vu-server-types'
+import { VuType } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 
 export class LawoMC2Connection implements MixerConnection {
     mixerProtocol: MixerProtocol

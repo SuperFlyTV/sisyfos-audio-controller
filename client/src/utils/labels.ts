@@ -1,6 +1,6 @@
 import defaultStoreRedux, {
     ReduxStore,
-} from '../../../shared/src/reducers/store'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import type { Store } from 'redux'
 
 let activeStore: Store = defaultStoreRedux

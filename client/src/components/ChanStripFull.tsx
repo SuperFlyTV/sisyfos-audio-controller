@@ -4,17 +4,17 @@ import ReactSlider from 'react-slider'
 import '../assets/css/ChanStripFull.css'
 import { Store } from 'redux'
 import { connect } from 'react-redux'
-import { SettingsActionTypes } from '../../../shared/src/actions/settingsActions'
-import { Fader } from '../../../shared/src/reducers/fadersReducer'
+import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { Fader } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import {
     SOCKET_SET_FX,
     SOCKET_SET_AUX_LEVEL,
     SOCKET_SET_INPUT_GAIN,
     SOCKET_SET_INPUT_SELECTOR,
-} from '../../../shared/src/constants/SOCKET_IO_DISPATCHERS'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import ReductionMeter from './ReductionMeter'
-import { FxParam } from '../../../shared/src/constants/MixerProtocolInterface'
-import { Channel } from '../../../shared/src/reducers/channelsReducer'
+import { FxParam } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { Channel } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { getFaderLabel } from '../utils/labels'
 import ChanStripEq from './ChanStripEq'
 import { InputSelector } from './InputSelector'

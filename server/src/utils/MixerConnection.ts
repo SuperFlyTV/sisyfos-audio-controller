@@ -6,14 +6,14 @@ import {
     MixerProtocolGeneric,
     FxParam,
     MixerConnectionTypes,
-} from '../../../shared/src/constants/MixerProtocolInterface'
-import { ChMixerConnection } from '../../../shared/src/reducers/channelsReducer'
-import { ChannelActionTypes } from '../../../shared/src/actions/channelActions'
-import { FaderActionTypes } from '../../../shared/src/actions/faderActions'
-import { ChannelReference } from '../../../shared/src/reducers/fadersReducer'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChMixerConnection } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChannelReference } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { sendChLevelsToOuputServer } from './outputLevelServer'
 import { MixerConnection } from './mixerConnections'
-import { SecondOutRowButtonType } from '../../../shared/src/reducers/settingsReducer'
+import { SecondOutRowButtonType } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { mixerRegistry } from '../plugins/MixerRegistry'
 
 export class MixerGenericConnection {

@@ -7,8 +7,8 @@ import { remoteConnections } from '../../mainClasses'
 import {
     FxParam,
     MixerProtocol,
-} from '../../../../shared/src/constants/MixerProtocolInterface'
-import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
 import { MixerConnection } from '.'
 

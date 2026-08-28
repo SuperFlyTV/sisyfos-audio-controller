@@ -1,4 +1,4 @@
-import { FxParam } from '../../../../shared/src/constants/MixerProtocolInterface'
+import { FxParam } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 
 /**
  * For two consecutive channels, if one is linkable as PRIMARY and the other as SECONDARY,

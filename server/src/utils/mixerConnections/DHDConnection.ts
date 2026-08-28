@@ -6,22 +6,22 @@ import { remoteConnections } from '../../mainClasses'
 import {
     FxParam,
     MixerProtocol,
-} from '../../../../shared/src/constants/MixerProtocolInterface'
-import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
-import { SettingsActionTypes } from '../../../../shared/src/actions/settingsActions'
-import { ChannelActionTypes } from '../../../../shared/src/actions/channelActions'
+import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { MixerConnection } from '.'
 import { EventEmitter } from 'stream'
 import { addAbortListener } from 'events'
 import { sendVuLevel } from '../vuServer'
-import { VuType } from '../../../../shared/src/utils/vu-server-types'
+import { VuType } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import _ from 'lodash'
 import {
     INITIALIZE_COMMANDS_FADER_SOURCE_ID,
     INITIALIZE_COMMANDS_FADERS,
     INITIALIZE_COMMANDS_SOURCE_LIST,
-} from '../../../../shared/src/constants/mixerProtocols/DHD'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 
 export class DHDMixerConnection implements MixerConnection {
     readonly mixerProtocol: MixerProtocol

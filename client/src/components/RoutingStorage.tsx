@@ -3,14 +3,14 @@ import React from 'react'
 import '../assets/css/RoutingStorage.css'
 import { Store } from 'redux'
 import { connect } from 'react-redux'
-import { SettingsActionTypes } from '../../../shared/src/actions/settingsActions'
+import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import {
     SOCKET_GET_SNAPSHOT_LIST,
     SOCKET_LOAD_SNAPSHOT,
     SOCKET_SAVE_SNAPSHOT,
     SOCKET_GET_CCG_LIST,
     SOCKET_SAVE_CCG_FILE,
-} from '../../../shared/src/constants/SOCKET_IO_DISPATCHERS'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import MixerPresetStorage from './MixerPresetStorage'
 
 interface StorageProps {

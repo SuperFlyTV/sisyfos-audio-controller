@@ -4,24 +4,24 @@ import { store, state } from '../../reducers/store'
 import {
     FxParam,
     MixerProtocol,
-} from '../../../../shared/src/constants/MixerProtocolInterface'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
-import { SettingsActionTypes } from '../../../../shared/src/actions/settingsActions'
+import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import {
     ChannelReference,
     Fader,
-} from '../../../../shared/src/reducers/fadersReducer'
-import { Channel } from '../../../../shared/src/reducers/channelsReducer'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { Channel } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { dbToFloat, floatToDB } from './LawoRubyConnection'
 import {
     FairlightAudioMixOption,
     FairlightInputConfiguration,
 } from 'atem-connection/dist/enums'
-import { FaderActionTypes } from '../../../../shared/src/actions/faderActions'
+import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import {
     ChannelActions,
     ChannelActionTypes,
-} from '../../../../shared/src/actions/channelActions'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { FairlightAudioSource } from 'atem-connection/dist/state/fairlight'
 import { Dispatch } from '@reduxjs/toolkit'
 import { MixerConnection } from '.'

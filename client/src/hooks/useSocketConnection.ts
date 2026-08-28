@@ -6,8 +6,8 @@ import {
     SOCKET_GET_CCG_LIST,
     SOCKET_GET_MIXER_PRESET_LIST,
     SOCKET_GET_PAGES_LIST,
-} from '../../../shared/src/constants/SOCKET_IO_DISPATCHERS'
-import defaultStoreRedux from '../../../shared/src/reducers/store'
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import defaultStoreRedux from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import type { Store } from 'redux'
 import { setActiveSisyfosStore } from '../utils/labels'
 
