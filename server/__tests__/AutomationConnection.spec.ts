@@ -84,7 +84,7 @@ describe('AutomationConnection', () => {
     beforeEach(() => {
         // Clear all mocks before each test
         jest.clearAllMocks()
-        global.mainThreadHandler = mockMainThreadHandler
+        global.mainThreadHandler = mockMainThreadHandler as any
 
         // Reset mock implementation
         mockUdpInstance.on.mockReturnThis()
