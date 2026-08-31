@@ -8,9 +8,9 @@ import {
 import { SnapshotHandler } from './utils/SnapshotHandler'
 import { socketServer } from './expressHandler'
 
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import * as IO from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import * as IO from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 import {
     loadSettings,
@@ -26,16 +26,16 @@ import {
 import {
     ChannelActions,
     ChannelActionTypes,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { logger } from './utils/logger'
-import { CustomPages } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { FxParam } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { CustomPages } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { FxParam } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import path from 'path'
 import {
     Channel,
     NumberOfChannels,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { ChannelReference } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { ChannelReference } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { Dispatch } from 'redux'
 
 export class MainThreadHandlers {

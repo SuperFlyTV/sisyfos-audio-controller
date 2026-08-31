@@ -3,16 +3,16 @@ import net from 'net'
 import { store, state } from '../../reducers/store'
 import { mixerGenericConnection } from '../../mainClasses'
 
-import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 //Utils:
 import {
     SkaarhojRemoteFaderPresets,
     SkaarhojRemoteProtocol,
     MixerProtocolPresets,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
-import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 export class SkaarhojRemoteConnection {
     remoteProtocol: SkaarhojRemoteProtocol

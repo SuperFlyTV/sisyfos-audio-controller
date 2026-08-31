@@ -20,9 +20,9 @@
     ],
     "types": "./dist/component-lib/src/index.d.ts",
     "dependencies": {
-        "@Sofie-Automation/sisyfos-audio-controller-shared-lib": "*",
         "@floating-ui/react": "^0.26.20",
         "@reduxjs/toolkit": "^2.12.0",
+        "@sofie-automation/sisyfos-audio-controller-shared-lib": "*",
         "classnames": "^2.5.1",
         "i18next": "^20.6.1",
         "i18next-browser-languagedetector": "^7.2.0",

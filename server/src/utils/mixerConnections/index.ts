@@ -1,4 +1,4 @@
-export type { MixerConnection } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+export type { MixerConnection } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 /**
  * For two consecutive channels, if one is linkable as PRIMARY and the other as SECONDARY,

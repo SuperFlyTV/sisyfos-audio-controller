@@ -9,8 +9,8 @@
         "test:watch": "echo \"Everything is fine and not watching\""
     },
     "dependencies": {
-        "@Sofie-Automation/sisyfos-audio-controller-shared-lib": "*",
         "@floating-ui/react": "^0.26.20",
+        "@sofie-automation/sisyfos-audio-controller-shared-lib": "*",
         "classnames": "^2.5.1",
         "i18next": "^20.6.1",
         "i18next-browser-languagedetector": "^7.2.0",

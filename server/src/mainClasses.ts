@@ -1,4 +1,4 @@
-import { MixerProtocolPresets } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { MixerProtocolPresets } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { MixerGenericConnection } from './utils/MixerConnection'
 import { AutomationConnection } from './utils/AutomationConnection'
 import { RemoteConnection } from './utils/RemoteConnection'

@@ -1,9 +1,9 @@
-import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     ChannelActions,
     ChannelActionTypes,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     SOCKET_RETURN_SNAPSHOT_LIST,
     SOCKET_SET_FULL_STORE,
@@ -13,13 +13,13 @@ import {
     SOCKET_SET_MIXER_ONLINE,
     SOCKET_RETURN_MIXER_PRESET_LIST,
     SOCKET_RETURN_PAGES_LIST,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     ChMixerConnection,
     NumberOfChannels,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { VuType } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { MixerSettings } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { VuType } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { MixerSettings } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import type { Store } from 'redux'
 import { getSisyfosReduxState } from './labels'
 

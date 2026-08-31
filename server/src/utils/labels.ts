@@ -1,4 +1,4 @@
-import { ChMixerConnection } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChMixerConnection } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { state } from '../reducers/store'
 
 export function getChannelLabel(

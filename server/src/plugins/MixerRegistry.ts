@@ -1,9 +1,9 @@
-import { MixerProtocolPresets } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { MixerProtocolGeneric } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { MixerProtocolPresets } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { MixerProtocolGeneric } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     MixerPluginEntry,
     MixerPluginManifest,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { MixerConnection } from '../utils/mixerConnections'
 import { createBuiltinConnection } from './builtinConnectionFactories'
 import { logger } from '../utils/logger'

@@ -1,7 +1,7 @@
 import classNames from 'classnames'
-import { SOCKET_SET_INPUT_SELECTOR } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { SOCKET_SET_INPUT_SELECTOR } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import React from 'react'
-import { Fader } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { Fader } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 export function InputSelectorButton({
     index,

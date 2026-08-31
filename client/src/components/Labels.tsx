@@ -3,20 +3,20 @@ import React, { ChangeEvent } from 'react'
 import '../assets/css/LabelSettings.css'
 import { Dispatch, Store } from 'redux'
 import { connect } from 'react-redux'
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Fader } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Fader } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     SOCKET_FLUSH_LABELS,
     SOCKET_SET_LABELS,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { CustomPages } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { CustomPages } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { getChannelLabel } from '../utils/labels'
 
-import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     ChannelActions,
     ChannelActionTypes,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 interface LabelSettingsInjectProps {
     customPages: CustomPages[]

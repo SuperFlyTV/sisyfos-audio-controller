@@ -10,20 +10,20 @@ import { mixerGenericConnection, remoteConnections } from '../../mainClasses'
 import {
     FxParam,
     MixerProtocol,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { behringerXrMeter } from './productSpecific/behringerXr'
 import { midasMeter } from './productSpecific/midas'
-import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
 import { sendVuLevel } from '../vuServer'
-import { VuType } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { VuType } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     ChannelReference,
     Fader,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Channel } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Channel } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { STORAGE_FOLDER } from '../SettingsStorage'
 import { MixerConnection } from '.'
 

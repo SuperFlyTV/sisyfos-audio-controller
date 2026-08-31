@@ -3,14 +3,14 @@ import React, { ChangeEvent } from 'react'
 import '../assets/css/PagesSettings.css'
 import { Store } from 'redux'
 import { connect } from 'react-redux'
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Fader } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Fader } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import Select from 'react-select'
 import {
     SOCKET_GET_PAGES_LIST,
     SOCKET_SET_PAGES_LIST,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { CustomPages } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { CustomPages } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { SortableFaderList } from './SortableFaderList'
 
 const selectorColorStyles = {

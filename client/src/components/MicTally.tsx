@@ -3,15 +3,15 @@ import { connect } from 'react-redux'
 
 import '../assets/css/MicTally.css'
 import { Store } from 'redux'
-import { Fader } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Channels } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Settings } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { Fader } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Channels } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Settings } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { getFaderLabel } from '../utils/labels'
 
 import {
     SOCKET_TOGGLE_PGM,
     SOCKET_TOGGLE_VO,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 interface MicTallyInjectProps {
     channels: Channels

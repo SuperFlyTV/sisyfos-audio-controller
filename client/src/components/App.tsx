@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { connect } from 'react-redux'
 import { compose } from 'redux'
-import { ReduxStore } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ReduxStore } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 import '../assets/css/App.css'
 import Channels from './Channels'

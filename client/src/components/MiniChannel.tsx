@@ -6,10 +6,10 @@ import '../assets/css/NoUiSlider.css'
 
 //assets:
 import '../assets/css/MiniChannel.css'
-import { Fader } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Channels } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Settings } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { Fader } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Channels } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Settings } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { getFaderLabel } from '../utils/labels'
 
 interface ChannelInjectProps {

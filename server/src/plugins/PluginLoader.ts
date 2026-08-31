@@ -3,7 +3,7 @@ import path from 'path'
 import {
     MixerPluginManifest,
     MixerPluginModule,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { PLUGINS_FOLDER } from '../constants/storagePaths'
 import { mixerRegistry, MixerRegistry } from './MixerRegistry'
 import { logger } from '../utils/logger'

@@ -3,9 +3,9 @@ import { connect } from 'react-redux'
 
 import '../assets/css/MiniChannels.css'
 import { Store } from 'redux'
-import { Fader } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Channels as ChannelsInterface } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Settings } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { Fader } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Channels as ChannelsInterface } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Settings } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import MiniChannel from './MiniChannel'
 import MiniChanStrip from './MiniChanStrip'
 

@@ -3,15 +3,15 @@ import WebMidi from 'webmidi'
 import { store, state } from '../../reducers/store'
 import { mixerGenericConnection } from '../../mainClasses'
 
-import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 //Utils:
 import {
     RemoteProtocol,
     RemoteFaderPresets,
     MidiReceiveTypes,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { MixerProtocolPresets } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { MixerProtocolPresets } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
 
 export class HuiMidiRemoteConnection {

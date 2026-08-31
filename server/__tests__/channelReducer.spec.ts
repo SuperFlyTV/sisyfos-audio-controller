@@ -1,9 +1,9 @@
-import { createEnhancedReducer } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { createEnhancedReducer } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     Channel,
     NumberOfChannels,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 import fs from 'fs'
 const parsedFullStoreJSON = fs.readFileSync(

@@ -8,21 +8,21 @@ import fs from 'fs'
 import {
     FxParam,
     MixerProtocol,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
 import { dbToFloat, floatToDB } from './LawoRubyConnection'
-import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     ChannelReference,
     Fader,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { EmberElement, NumberedTreeNode } from 'emberplus-connection/dist/model'
 import { STORAGE_FOLDER } from '../SettingsStorage'
 import { MixerConnection } from '.'
 import { sendVuLevel } from '../vuServer'
-import { VuType } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { VuType } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 export class LawoMC2Connection implements MixerConnection {
     mixerProtocol: MixerProtocol

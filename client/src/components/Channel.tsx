@@ -8,11 +8,11 @@ import '../assets/css/NoUiSlider.css'
 
 //assets:
 import '../assets/css/Channel.css'
-import * as IO from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import * as IO from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     ChannelReference,
     Fader,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     FirstInRowButtonType,
     SecondInRowButtonType,
@@ -20,20 +20,20 @@ import {
     Settings,
     ThirdInRowButtonType,
     ThirdOutRowButtonType,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { withTranslation } from 'react-i18next'
 import {
     MixerConnectionTypes,
     VuLabelConversionType,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { getFaderLabel } from '../utils/labels'
-import { Conversions } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { Conversions } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { ChannelLayoutSettingsButton } from './ChannelLayoutSettingsPopup'
 import LinkedIcon from '../assets/icons/link.svg'
 import UnlinkedLeftIcon from '../assets/icons/link-left.svg'
 import UnlinkedRightIcon from '../assets/icons/link-right.svg'
-import { RootState } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { RootState } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 interface ChannelInjectProps {
     t: any

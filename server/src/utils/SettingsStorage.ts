@@ -8,22 +8,22 @@ import { STORAGE_FOLDER } from '../constants/storagePaths'
 export { STORAGE_FOLDER } from '../constants/storagePaths'
 
 // Redux:
-import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { logger } from './logger'
-import { defaultFadersReducerState } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { defaultFadersReducerState } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 import {
     Channels,
     NumberOfChannels,
     defaultChannelsReducerState,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 import {
     CustomPages,
     Settings,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Faders } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Faders } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 export interface ShotStorage {
     channelState: Channels

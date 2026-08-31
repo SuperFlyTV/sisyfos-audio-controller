@@ -1,7 +1,7 @@
 'use strict'
 Object.defineProperty(exports, '__esModule', { value: true })
 const WebSocketMixerConnection = require('./WebSocketMixerConnection')
-const sisyfos_audio_controller_shared_lib = require('@Sofie-Automation/sisyfos-audio-controller-shared-lib')
+const sisyfos_audio_controller_shared_lib = require('@sofie-automation/sisyfos-audio-controller-shared-lib')
 function fx(mixerMessage, meta = {}) {
     return [{ mixerMessage, ...meta }]
 }

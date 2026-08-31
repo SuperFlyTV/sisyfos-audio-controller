@@ -11,15 +11,15 @@ import {
     CasparCGChannelLayerPair,
     CasparCGMixerGeometryFile,
     FxParam,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Channel } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Channel } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
 import { dbToFloat, floatToDB } from './LawoRubyConnection'
-import { Fader } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { Fader } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { sendVuLevel } from '../vuServer'
-import { VuType } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { VuType } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { STORAGE_FOLDER } from '../SettingsStorage'
 import { MixerConnection } from '.'
 

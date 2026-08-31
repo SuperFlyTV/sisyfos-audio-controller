@@ -6,7 +6,7 @@ import type {
     ChannelReference,
     Fader,
     MixerProtocolGeneric,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 const SET_MIXER_ONLINE = 'SET_MIXER_ONLINE'
 const SET_FADER_LEVEL = 'SET_FADER_LEVEL'

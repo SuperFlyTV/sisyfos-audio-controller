@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io'
-import { VuType } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { VuType } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 const sockets: Array<Socket> = []
 

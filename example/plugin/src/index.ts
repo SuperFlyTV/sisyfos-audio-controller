@@ -1,9 +1,9 @@
 import { WebSocketMixerConnection } from './WebSocketMixerConnection'
-import { FxParam } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { FxParam } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import type {
     MixerMessageProtocol,
     MixerProtocolGeneric,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 function fx(
     mixerMessage: string,

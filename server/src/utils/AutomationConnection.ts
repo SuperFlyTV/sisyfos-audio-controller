@@ -8,9 +8,9 @@ import {
     AutomationProtocol,
     AutomationPresets,
     AutomationChannelAPI,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Fader } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Fader } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { getFaderLabel } from './labels'
 import { logger } from './logger'
 

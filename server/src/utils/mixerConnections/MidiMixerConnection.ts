@@ -6,18 +6,18 @@ import { store, state } from '../../reducers/store'
 import { remoteConnections } from '../../mainClasses'
 
 //Utils:
-import { MixerProtocolPresets } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { MixerProtocolPresets } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     FxParam,
     MixerProtocol,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { ChannelActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { ChannelActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { FaderActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { logger } from '../logger'
 import {
     ChannelReference,
     Fader,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { MixerConnection } from '.'
 
 export class MidiMixerConnection implements MixerConnection {

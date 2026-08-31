@@ -4,13 +4,13 @@ import ClassNames from 'classnames'
 import '../assets/css/ChannelMonitorOptions.css'
 import { Store } from 'redux'
 import { connect } from 'react-redux'
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Settings } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { Settings } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import {
     SOCKET_SET_AUX_LEVEL,
     SOCKET_SET_FADER_MONITOR,
     SOCKET_SHOW_IN_MINI_MONITOR,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { getFaderLabel } from '../utils/labels'
 
 interface MonitorSettingsInjectProps {

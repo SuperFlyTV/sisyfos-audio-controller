@@ -13,12 +13,12 @@ import {
     Settings as SettingsInterface,
     ThirdInRowButtonType,
     ThirdOutRowButtonType,
-} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+} from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 import { Store } from 'redux'
 import { ChangeEvent } from 'react'
-import { SOCKET_SAVE_SETTINGS } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { SettingsActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { MixerConnectionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import { SOCKET_SAVE_SETTINGS } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { SettingsActionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
+import { MixerConnectionTypes } from '@sofie-automation/sisyfos-audio-controller-shared-lib'
 
 //Set style for Select dropdown component:
 const selectorColorStyles = {
