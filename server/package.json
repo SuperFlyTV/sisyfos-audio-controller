@@ -21,7 +21,7 @@
     },
     "dependencies": {
         "@babel/core": "^7.26.10",
-        "@sofie-automation/sisyfos-audio-controller-shared-lib": "*",
+        "@sofie-automation/sisyfos-audio-controller-shared-lib": "workspace:*",
         "@tv2media/logger": "^2.0.2",
         "atem-connection": "^3.4.0",
         "casparcg-connection": "^5.1.0",

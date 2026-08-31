@@ -2700,7 +2700,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sofie-automation/sisyfos-audio-controller-shared-lib@npm:*, @sofie-automation/sisyfos-audio-controller-shared-lib@workspace:shared":
+"@sofie-automation/sisyfos-audio-controller-shared-lib@workspace:*, @sofie-automation/sisyfos-audio-controller-shared-lib@workspace:shared":
   version: 0.0.0-use.local
   resolution: "@sofie-automation/sisyfos-audio-controller-shared-lib@workspace:shared"
   dependencies:
@@ -4683,7 +4683,7 @@ asn1@evs-broadcast/node-asn1:
   dependencies:
     "@babel/core": "npm:^7.26.10"
     "@floating-ui/react": "npm:^0.26.20"
-    "@sofie-automation/sisyfos-audio-controller-shared-lib": "npm:*"
+    "@sofie-automation/sisyfos-audio-controller-shared-lib": "workspace:*"
     "@svgr/webpack": "npm:^8.1.0"
     "@types/lodash": "npm:^4.17.7"
     "@types/node": "npm:^18.16.0"
@@ -10975,7 +10975,7 @@ asn1@evs-broadcast/node-asn1:
   resolution: "server@workspace:server"
   dependencies:
     "@babel/core": "npm:^7.26.10"
-    "@sofie-automation/sisyfos-audio-controller-shared-lib": "npm:*"
+    "@sofie-automation/sisyfos-audio-controller-shared-lib": "workspace:*"
     "@tv2media/logger": "npm:^2.0.2"
     "@types/express": "npm:^4.17.21"
     "@types/jest": "npm:^29.5.14"
@@ -11141,7 +11141,7 @@ asn1@evs-broadcast/node-asn1:
     "@rollup/plugin-commonjs": "npm:^26.0.1"
     "@rollup/plugin-node-resolve": "npm:^16.0.3"
     "@rollup/plugin-typescript": "npm:^11.1.6"
-    "@sofie-automation/sisyfos-audio-controller-shared-lib": "npm:*"
+    "@sofie-automation/sisyfos-audio-controller-shared-lib": "workspace:*"
     "@svgr/rollup": "npm:^8.1.0"
     classnames: "npm:^2.5.1"
     i18next: "npm:^20.6.1"
