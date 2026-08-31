@@ -1,51 +1,18 @@
 import { WebSocketMixerConnection } from './WebSocketMixerConnection'
-import type { MixerProtocolGeneric } from './types/sisyfos-host'
-
-/** Mirrors Sisyfos shared FxParam enum (0–21). */
-enum FxParam {
-    EqGain01 = 0,
-    EqGain02 = 1,
-    EqGain03 = 2,
-    EqGain04 = 3,
-    EqFreq01 = 4,
-    EqFreq02 = 5,
-    EqFreq03 = 6,
-    EqFreq04 = 7,
-    EqQ01 = 8,
-    EqQ02 = 9,
-    EqQ03 = 10,
-    EqQ04 = 11,
-    DelayTime = 12,
-    GainTrim = 13,
-    CompThrs = 14,
-    CompRatio = 15,
-    CompKnee = 16,
-    CompMakeUp = 17,
-    CompAttack = 18,
-    CompHold = 19,
-    CompRelease = 20,
-    CompOnOff = 21,
-}
-
-type MixerMessage = {
-    mixerMessage: string
-    min?: number
-    max?: number
-    minLabel?: number
-    maxLabel?: number
-    label?: string
-    valueLabel?: string
-    valueAsLabels?: string[]
-}
+import { FxParam } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import type {
+    MixerMessageProtocol,
+    MixerProtocolGeneric,
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 
 function fx(
     mixerMessage: string,
-    meta: Omit<MixerMessage, 'mixerMessage'> = {}
-): MixerMessage[] {
+    meta: Omit<MixerMessageProtocol, 'mixerMessage'> = {}
+): MixerMessageProtocol[] {
     return [{ mixerMessage, ...meta }]
 }
 
-const fxFromMixer: Record<number, MixerMessage[]> = {
+const fxFromMixer: Record<number, MixerMessageProtocol[]> = {
     [FxParam.EqGain01]: fx('fx/eq/1/g', {
         minLabel: -15,
         maxLabel: 15,
@@ -195,7 +162,7 @@ const fxFromMixer: Record<number, MixerMessage[]> = {
     }),
 }
 
-const fxToMixer: Record<number, MixerMessage[]> = Object.fromEntries(
+const fxToMixer: Record<number, MixerMessageProtocol[]> = Object.fromEntries(
     Object.entries(fxFromMixer).map(([key, messages]) => [
         key,
         messages.map(({ mixerMessage }) => ({ mixerMessage })),
@@ -210,7 +177,7 @@ const channelInputGain = fx('input/gain', {
 })
 
 /** Matches mock device default `MOCK_INPUT_SELECTORS` (4). */
-const channelInputSelector: MixerMessage[] = [
+const channelInputSelector: MixerMessageProtocol[] = [
     { mixerMessage: 'input/selector/1', label: '1' },
     { mixerMessage: 'input/selector/2', label: '2' },
     { mixerMessage: 'input/selector/3', label: '3' },

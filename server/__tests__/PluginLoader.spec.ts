@@ -29,6 +29,12 @@ describe('MixerRegistry', () => {
                         protocol: 'custom' as any,
                         MAX_UPDATES_PER_SECOND: 10,
                         channelTypes: [],
+                        fader: {
+                            min: 0,
+                            max: 1,
+                            zero: 0.75,
+                            step: 0.01,
+                        },
                     },
                     createConnection,
                 },
@@ -50,7 +56,21 @@ describe('MixerRegistry', () => {
         const registry = new MixerRegistry()
         registry.registerBuiltins(MixerProtocolPresets)
 
-        const mockConnection = { kind: 'plugin-connection' }
+        const mockConnection = {
+            loadMixerPreset: jest.fn(),
+            updateInputGain: jest.fn(),
+            updateInputSelector: jest.fn(),
+            updatePflState: jest.fn(),
+            updateMuteState: jest.fn(),
+            updateAMixState: jest.fn(),
+            updateNextAux: jest.fn(),
+            updateFx: jest.fn(),
+            updateAuxLevel: jest.fn(),
+            updateChannelName: jest.fn(),
+            injectCommand: jest.fn(),
+            updateChannelSetting: jest.fn(),
+            updateFadeIOLevel: jest.fn(),
+        }
         const createConnection = jest.fn(() => mockConnection)
 
         registry.registerPlugin(
@@ -70,6 +90,12 @@ describe('MixerRegistry', () => {
                         protocol: 'custom' as any,
                         MAX_UPDATES_PER_SECOND: 10,
                         channelTypes: [],
+                        fader: {
+                            min: 0,
+                            max: 1,
+                            zero: 0.75,
+                            step: 0.01,
+                        },
                     },
                     createConnection,
                 },

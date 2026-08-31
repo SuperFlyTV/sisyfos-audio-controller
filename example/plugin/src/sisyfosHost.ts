@@ -1,5 +1,5 @@
 import path from 'path'
-import type { SisyfosHostModules } from './types/sisyfos-host'
+import type { SisyfosHostModules } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 
 let cachedHost: SisyfosHostModules | undefined
 

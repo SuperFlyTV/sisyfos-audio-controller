@@ -45,15 +45,16 @@ export enum VuLabelConversionType {
     DecibelMC2 = 'decibelMC2',
 }
 export interface MixerProtocolGeneric {
-    protocol: MixerConnectionTypes
+    protocol: string
     fxList?: {}
     label: string
     presetFileExtension?: string
     loadPresetCommand?: Array<MixerMessageProtocol>
     MAX_UPDATES_PER_SECOND: number
+    pingTime?: number
     vuLabelConversionType?: VuLabelConversionType
     vuLabelValues?: Array<number>
-    fader?: {
+    fader: {
         min: number
         max: number
         zero: number
@@ -99,11 +100,12 @@ export interface ChannelTypes {
         CHANNEL_NAME?: Array<MixerMessageProtocol>
         PFL?: Array<MixerMessageProtocol>
         NEXT_SEND?: Array<MixerMessageProtocol>
-        [FX_PARAM: number]: Array<MixerMessageProtocol>
+        [FX_PARAM: number]: any
         AUX_LEVEL?: Array<MixerMessageProtocol>
         CHANNEL_MUTE_ON?: Array<MixerMessageProtocol>
         CHANNEL_MUTE_OFF?: Array<MixerMessageProtocol>
         CHANNEL_AMIX?: Array<MixerMessageProtocol>
+        [command: string]: any
     }
     toMixer: {
         CHANNEL_INPUT_GAIN?: Array<MixerMessageProtocol>
@@ -113,15 +115,16 @@ export interface ChannelTypes {
         PFL_ON?: Array<MixerMessageProtocol>
         PFL_OFF?: Array<MixerMessageProtocol>
         NEXT_SEND?: Array<MixerMessageProtocol>
-        [FX_PARAM: number]: Array<MixerMessageProtocol>
+        [FX_PARAM: number]: any
         AUX_LEVEL?: Array<MixerMessageProtocol>
         CHANNEL_MUTE_ON?: Array<MixerMessageProtocol>
         CHANNEL_MUTE_OFF?: Array<MixerMessageProtocol>
         CHANNEL_AMIX?: Array<MixerMessageProtocol>
+        [command: string]: any
     }
 }
 
-interface MixerMessageProtocol {
+export interface MixerMessageProtocol {
     mixerMessage: string
     value?: any
     type?: string

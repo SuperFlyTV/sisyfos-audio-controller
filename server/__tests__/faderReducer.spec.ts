@@ -1,5 +1,8 @@
 import { createEnhancedReducer } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
-import { Fader, Faders } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
+import {
+    Fader,
+    Faders,
+} from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 import { FaderActionTypes } from '@Sofie-Automation/sisyfos-audio-controller-shared-lib'
 
 import fs from 'fs'
